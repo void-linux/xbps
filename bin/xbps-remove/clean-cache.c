@@ -102,6 +102,8 @@ cleaner_cb(struct xbps_handle *xhp, xbps_object_t obj,
 		pkgd = xbps_pkgdb_get_pkg(xhp, binpkgver);
 	} else {
 		pkgd = xbps_rpool_get_pkg(xhp, binpkgver);
+		if (!pkgd)
+			pkgd = xbps_pkgdb_get_pkg(xhp, binpkgver);
 	}
 	if (pkgd) {
 		xbps_dictionary_get_cstring_nocopy(pkgd,
