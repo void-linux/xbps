@@ -316,13 +316,6 @@ dist_upgrade(struct xbps_handle *xhp, unsigned int cols, bool yes, bool drun)
 	if (rv == ENOENT) {
 		xbps_error_printf("No packages currently registered.\n");
 		return 0;
-	} else if (rv == EBUSY) {
-		if (drun) {
-			rv = 0;
-		} else {
-			xbps_error_printf("The 'xbps' package must be updated, please run `xbps-install -u xbps`\n");
-			return rv;
-		}
 	} else if (rv == EEXIST) {
 		return 0;
 	} else if (rv == ENOTSUP) {
@@ -350,8 +343,6 @@ install_new_pkg(struct xbps_handle *xhp, const char *pkg, bool force)
 		xbps_error_printf("No repositories currently registered!\n");
 	else if (rv == ENXIO)
 		xbps_error_printf("Package `%s' contains invalid dependencies, exiting.\n", pkg);
-	else if (rv == EBUSY)
-		xbps_error_printf("The 'xbps' package must be updated, please run `xbps-install -u xbps`\n");
 	else if (rv != 0) {
 		xbps_error_printf("Unexpected error: %s\n", strerror(rv));
 		rv = -1;
@@ -375,8 +366,6 @@ update_pkg(struct xbps_handle *xhp, const char *pkg, bool force)
 		xbps_error_printf("No repositories currently registered!\n");
 	else if (rv == ENXIO)
 		xbps_error_printf("Package `%s' contains invalid dependencies, exiting.\n", pkg);
-	else if (rv == EBUSY)
-		xbps_error_printf("The 'xbps' package must be updated, please run `xbps-install -u xbps`\n");
 	else if (rv != 0) {
 		xbps_error_printf("Unexpected error: %s\n", strerror(rv));
 		return -1;

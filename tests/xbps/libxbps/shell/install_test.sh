@@ -531,10 +531,7 @@ update_xbps_body() {
 	cd ..
 	xbps-rindex -d -a repo/*.xbps
 	atf_check_equal $? 0
-	out=$(xbps-install -r root --repository=repo -yun)
-	set -- $out
-	exp="$1 $2 $3 $4"
-	atf_check_equal "$exp" "xbps-1.1_1 update noarch $(readlink -f repo)"
+	atf_check -s exit:0 -o ignore -e match:"^WARNING: The 'xbps-1\.0_1' package is out of date, 'xbps-1\.1_1' is available\.$" -- xbps-install -r root --repository=repo -yn B
 
 	xbps-install -r root --repository=repo -yu xbps
 	atf_check_equal $? 0
@@ -584,10 +581,7 @@ update_xbps_virtual_body() {
 	cd ..
 	xbps-rindex -d -a repo/*.xbps
 	atf_check_equal $? 0
-	out=$(xbps-install -r root --repository=repo -yun)
-	set -- $out
-	exp="$1 $2 $3 $4"
-	atf_check_equal "$exp" "xbps-git-1.1_1 update noarch $(readlink -f repo)"
+	atf_check -s exit:0 -o ignore -e match:"^WARNING: The 'xbps-git-1\.0_1' package is out of date, 'xbps-git-1\.1_1' is available\.$" -- xbps-install -r root --repository=repo -yn B
 
 	xbps-install -r root --repository=repo -yu xbps
 	atf_check_equal $? 0
