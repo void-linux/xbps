@@ -61,11 +61,11 @@ vpkg_map_add(xbps_dictionary_t d, const char *pkgname, const char *vpkgver, cons
 	if (!providers) {
 		providers = xbps_dictionary_create();
 		if (!providers)
-			return -ENOMEM;
+			return xbps_error_oom();
 
 		if (!xbps_dictionary_set(d, pkgname, providers)) {
 			xbps_object_release(providers);
-			return -ENOMEM;
+			return xbps_error_oom();
 		}
 		alloc = true;
 	}
@@ -73,7 +73,7 @@ vpkg_map_add(xbps_dictionary_t d, const char *pkgname, const char *vpkgver, cons
 	if (!xbps_dictionary_set_cstring(providers, vpkgver, provider)) {
 		if (alloc)
 			xbps_object_release(providers);
-		return -ENOMEM;
+		return xbps_error_oom();
 	}
 
 	if (alloc)

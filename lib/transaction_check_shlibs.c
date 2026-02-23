@@ -76,8 +76,7 @@ shlib_entry_get(struct shlib_ctx *ctx, const char *name)
 		return res;
 	res = calloc(1, sizeof(*res));
 	if (!res) {
-		xbps_error_printf("out of memory\n");
-		errno = ENOMEM;
+		xbps_error_oom();
 		return NULL;
 	}
 	res->name = name;
@@ -109,16 +108,12 @@ collect_shlibs(struct shlib_ctx *ctx, xbps_array_t pkgs)
 
 	// can't set null values to xbps_dictionary so just use one boolean
 	placeholder = xbps_bool_create(true);
-	if (!placeholder) {
-		xbps_error_printf("out of memory\n");
-		return -ENOMEM;
-	}
+	if (!placeholder)
+		return xbps_error_oom();
 
 	ctx->seen = xbps_dictionary_create();
-	if (!ctx->seen) {
-		xbps_error_printf("out of memory\n");
-		return -ENOMEM;
-	}
+	if (!ctx->seen)
+		return xbps_error_oom();
 
 	for (unsigned int i = 0; i < xbps_array_count(pkgs); i++) {
 		const char *pkgname;
@@ -131,10 +126,8 @@ collect_shlibs(struct shlib_ctx *ctx, xbps_array_t pkgs)
 			xbps_error_printf("invalid package: missing `pkgname` property\n");
 			return -EINVAL;
 		}
-		if (!xbps_dictionary_set(ctx->seen, pkgname, placeholder)) {
-			xbps_error_printf("out of memory\n");
-			return -ENOMEM;
-		}
+		if (!xbps_dictionary_set(ctx->seen, pkgname, placeholder))
+			return xbps_error_oom();
 
 		if (xbps_transaction_pkg_type(pkgd) == XBPS_TRANS_REMOVE)
 			continue;
@@ -148,10 +141,8 @@ collect_shlibs(struct shlib_ctx *ctx, xbps_array_t pkgs)
 	}
 
 	iter = xbps_dictionary_iterator(ctx->xhp->pkgdb);
-	if (!iter) {
-		xbps_error_printf("out of memory\n");
-		return -ENOMEM;
-	}
+	if (!iter)
+		return xbps_error_oom();
 
 	while ((obj = xbps_object_iterator_next(iter))) {
 		xbps_array_t array;
@@ -210,18 +201,14 @@ check_shlibs(struct shlib_ctx *ctx, xbps_array_t pkgs)
 			missing = xbps_xasprintf(
 			    "%s: broken, unresolvable shlib `%s'",
 			    pkgver, shlib);
-			if (!xbps_array_add_cstring_nocopy(ctx->missing, missing)) {
-				xbps_error_printf("out of memory\n");
-				return -ENOMEM;
-			}
+			if (!xbps_array_add_cstring_nocopy(ctx->missing, missing))
+				return xbps_error_oom();
 		}
 	}
 
 	iter = xbps_dictionary_iterator(ctx->xhp->pkgdb);
-	if (!iter) {
-		xbps_error_printf("out of memory\n");
-		return -ENOMEM;
-	}
+	if (!iter)
+		return xbps_error_oom();
 
 	while ((obj = xbps_object_iterator_next(iter))) {
 		xbps_array_t array;
@@ -254,10 +241,8 @@ check_shlibs(struct shlib_ctx *ctx, xbps_array_t pkgs)
 			missing = xbps_xasprintf(
 			    "%s: broken, unresolvable shlib `%s'", pkgver,
 			    shlib);
-			if (!xbps_array_add_cstring_nocopy(ctx->missing, missing)) {
-				xbps_error_printf("out of memory\n");
-				return -ENOMEM;
-			}
+			if (!xbps_array_add_cstring_nocopy(ctx->missing, missing))
+				return xbps_error_oom();
 		}
 	}
 

@@ -57,7 +57,7 @@ xbps_archive_get_file(struct archive *ar, struct archive_entry *entry)
 
 	buf = malloc(len + 1);
 	if (!buf) {
-		xbps_error_printf("out of memory\n");
+		xbps_error_oom();
 		errno = ENOMEM;
 		return NULL;
 	}
