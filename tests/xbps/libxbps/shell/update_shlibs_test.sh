@@ -255,6 +255,74 @@ shlib_provides_replaces_body() {
 	atf_check_equal $? 2
 }
 
+atf_test_case shlib_32bit
+
+shlib_32bit_head() {
+	atf_set "descr" "32bit shlib-provides does not satisfy non-32bit shlib-requires"
+}
+
+shlib_32bit_body() {
+	mkdir -p repo pkg_A pkg_B
+	cd repo
+	atf_check -o ignore -- xbps-create -A noarch -n A-1.0_1 -s "A pkg" --shlib-provides "libfoo.so.1" ../pkg_A
+	atf_check -o ignore -- xbps-create -A noarch -n A-32bit-1.0_1 -s "A pkg" --shlib-provides "libfoo.so.1" ../pkg_A
+	atf_check -o ignore -- xbps-create -A noarch -n B-1.0_1 -s "B-32bit pkg" --shlib-requires "libfoo.so.1" ../pkg_B
+	atf_check -o ignore -- xbps-create -A noarch -n B-32bit-1.0_1 -s "B-32bit pkg" --shlib-requires "libfoo.so.1" ../pkg_B
+	atf_check -o ignore -e ignore -- xbps-rindex -a $PWD/*.xbps
+	cd ..
+
+	atf_check \
+		-s exit:8 \
+		-e match:"B-32bit-1\.0_1: broken, unresolvable shlib \`libfoo\.so\.1'" \
+		-- xbps-install -R repo -r root -ny A B-32bit
+	atf_check \
+		-s exit:8 \
+		-e match:"B-1\.0_1: broken, unresolvable shlib \`libfoo\.so\.1'" \
+		-- xbps-install -R repo -r root -ny A-32bit B
+}
+
+atf_test_case shlib_bump_32bit
+
+shlib_bump_32bit_head() {
+	atf_set "descr" "Tests for pkg updates: update pkg with 32bit soname bump"
+}
+
+shlib_bump_32bit_body() {
+	mkdir -p repo pkg_A pkg_B
+	cd repo
+	atf_check -o ignore -- xbps-create -A noarch -n A-1.0_1 -s "A pkg" --shlib-provides "libfoo.so.1" ../pkg_A
+	atf_check -o ignore -- xbps-create -A noarch -n A-32bit-1.0_1 -s "A-32bit pkg" --shlib-provides "libfoo.so.1" ../pkg_A
+	atf_check -o ignore -- xbps-create -A noarch -n B-1.0_1 -s "B pkg" --dependencies "A>=0" --shlib-requires "libfoo.so.1" ../pkg_B
+	atf_check -o ignore -- xbps-create -A noarch -n B-32bit-1.0_1 -s "B-32bit pkg" --dependencies "A-32bit>=0" --shlib-requires "libfoo.so.1" ../pkg_B
+	atf_check -o ignore -e ignore -- xbps-rindex -a $PWD/*.xbps
+	cd ..
+
+	atf_check -o ignore -e ignore -- xbps-install -C empty.conf -r root --repository=$PWD/repo -y B B-32bit
+
+	cd repo
+	atf_check -o ignore -- xbps-create -A noarch -n A-2.0_1 -s "A pkg" --shlib-provides "libfoo.so.2" ../pkg_A
+	atf_check -o ignore -e ignore -- xbps-rindex -a $PWD/*.xbps
+	cd ..
+
+	# returns ENOEXEC if there are unresolved shlibs
+	atf_check \
+		-s exit:8 \
+		-e match:"B-1\.0_1: broken, unresolvable shlib \`libfoo\.so\.1'" \
+		-- xbps-install -C empty.conf -r root --repository=$PWD/repo -yu A A-32bit
+
+	cd repo
+	atf_check -o ignore -- xbps-create -A noarch -n A-32bit-2.0_1 -s "A-32bit pkg" --shlib-provides "libfoo.so.2" ../pkg_A
+	atf_check -o ignore -- xbps-create -A noarch -n B-1.0_2 -s "B pkg" --dependencies "A>=0" --shlib-requires "libfoo.so.2" ../pkg_B
+	atf_check -o ignore -e ignore -- xbps-rindex -a $PWD/*.xbps
+	cd ..
+
+	# returns ENOEXEC if there are unresolved shlibs
+	atf_check \
+		-s exit:8 \
+		-e match:"B-32bit-1\.0_1: broken, unresolvable shlib \`libfoo\.so\.1'" \
+		-- xbps-install -C empty.conf -r root --repository=$PWD/repo -yu A A-32bit
+}
+
 atf_init_test_cases() {
 	atf_add_test_case shlib_bump
 	atf_add_test_case shlib_bump_incomplete_revdep_in_trans
@@ -263,4 +331,6 @@ atf_init_test_cases() {
 	atf_add_test_case shlib_bump_versioned
 	atf_add_test_case shlib_unknown_provider
 	atf_add_test_case shlib_provides_replaces
+	atf_add_test_case shlib_32bit
+	atf_add_test_case shlib_bump_32bit
 }
