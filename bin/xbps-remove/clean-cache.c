@@ -176,8 +176,10 @@ clean_cachedir(struct xbps_handle *xhp, bool uninstalled, bool drun)
 	}
 
 	array = xbps_array_create();
-	if (!array)
+	if (!array) {
+		(void)closedir(dirp);
 		return xbps_error_oom();
+	}
 
 	while ((dp = readdir(dirp)) != NULL) {
 		if ((strcmp(dp->d_name, ".") == 0) ||
@@ -193,6 +195,7 @@ clean_cachedir(struct xbps_handle *xhp, bool uninstalled, bool drun)
 		}
 		if (!xbps_array_add_cstring(array, dp->d_name)) {
 			xbps_object_release(array);
+			(void)closedir(dirp);
 			return xbps_error_oom();
 		}
 	}
