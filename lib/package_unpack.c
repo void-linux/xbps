@@ -88,7 +88,6 @@ unpack_archive(struct xbps_handle *xhp,
 {
 	xbps_dictionary_t binpkg_filesd, pkg_filesd, obsd;
 	xbps_array_t array, obsoletes;
-	xbps_trans_type_t ttype;
 	const struct stat *entry_statp;
 	struct stat st;
 	struct xbps_unpack_cb_data xucd;
@@ -97,17 +96,16 @@ unpack_archive(struct xbps_handle *xhp,
 	const char *entry_pname, *pkgname;
 	const char *file;
 	int ar_rv, rv, error, entry_type, flags;
-	bool preserve, update, file_exists, keep_conf_file;
+	bool preserve, file_exists, keep_conf_file;
 	bool skip_extract, force, xucd_stats;
 	uid_t euid;
 
 	binpkg_filesd = pkg_filesd = NULL;
-	force = preserve = update = file_exists = false;
+	force = preserve = false;
 	xucd_stats = false;
-	ar_rv = rv = error = entry_type = flags = 0;
+	ar_rv = rv = error = 0;
 
 	xbps_dictionary_get_bool(pkg_repod, "preserve", &preserve);
-	ttype = xbps_transaction_pkg_type(pkg_repod);
 
 	memset(&xucd, 0, sizeof(xucd));
 
@@ -119,10 +117,6 @@ unpack_archive(struct xbps_handle *xhp,
 
 	if (xhp->flags & XBPS_FLAG_FORCE_UNPACK) {
 		force = true;
-	}
-
-	if (ttype == XBPS_TRANS_UPDATE) {
-		update = true;
 	}
 
 	/*
@@ -169,7 +163,6 @@ unpack_archive(struct xbps_handle *xhp,
 			break;
 
 		entry_pname = archive_entry_pathname(entry);
-		entry_size = archive_entry_size(entry);
 
 		if (strcmp("./INSTALL", entry_pname) == 0 ||
 		    strcmp("./REMOVE", entry_pname) == 0 ||

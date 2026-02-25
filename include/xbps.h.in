@@ -777,6 +777,16 @@ int xbps_error_errno(int r, const char *fmt, ...)  PRINTF_LIKE(2, 3);
 	xbps_error_errno(ENOMEM, "%s:%d %s: out of memory\n", __FILE__,        \
 	        __LINE__, __func__)
 
+/**
+ * @brief Log and abort for code that should be unreachable.
+ */
+#define xbps_unreachable()                                                     \
+	do {                                                                   \
+		xbps_error_printf("%s:%d %s: code should not be reached\n",    \
+		    __FILE__, __LINE__, __func__);                             \
+		abort();                                                       \
+	} while (0)
+
 /**@}*/
 
 /** @addtogroup configure */

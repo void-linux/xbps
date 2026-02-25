@@ -28,7 +28,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
-#include <ctype.h>
 #include <unistd.h>
 #include <limits.h>
 #include <locale.h>
@@ -109,7 +108,6 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 	xbps_trans_type_t ttype;
 	const char *pkgver = NULL, *pkgname = NULL;
 	int rv = 0;
-	bool update, replaced;
 
 	setlocale(LC_ALL, "");
 
@@ -220,6 +218,7 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 		xbps_dictionary_t dict;
 		xbps_data_t script = NULL;
 		const char *pkgdb_pkgver;
+		bool update;
 
 		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 		xbps_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
@@ -232,7 +231,7 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 		}
 
 		if ((pkgdb_pkgd = xbps_pkgdb_get_pkg(xhp, pkgname)) == NULL) {
-			replaced = false;
+			bool replaced = false;
 			xbps_dictionary_get_bool(obj, "replaced", &replaced);
 			if (replaced) {
 				continue;
@@ -311,14 +310,14 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 
 		ttype = xbps_transaction_pkg_type(obj);
 		if (ttype == XBPS_TRANS_REMOVE) {
+			bool replaced = false;
+			bool update = false;
 			/*
 			 * Remove package.
 			 */
-			update = false;
 			xbps_dictionary_get_bool(obj, "remove-and-update", &update);
-			replaced = false;
 			xbps_dictionary_get_bool(obj, "replaced", &replaced);
-			if (((pkgdb_pkgd = xbps_pkgdb_get_pkg(xhp, pkgname)) == NULL) && replaced) {
+			if (replaced && !xbps_pkgdb_get_pkg(xhp, pkgname)) {
 				continue;
 			}
 			rv = xbps_remove_pkg(xhp, pkgver, update);
@@ -410,6 +409,8 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 	xbps_set_cb_state(xhp, XBPS_STATE_TRANS_CONFIGURE, 0, NULL, NULL);
 
 	while ((obj = xbps_object_iterator_next(iter)) != NULL) {
+		bool update;
+
 		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 		ttype = xbps_transaction_pkg_type(obj);
 		if (ttype == XBPS_TRANS_REMOVE || ttype == XBPS_TRANS_HOLD) {
@@ -417,9 +418,7 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 			    "%s: %d\n", __func__, pkgver, ttype);
 			continue;
 		}
-		update = false;
-		if (ttype == XBPS_TRANS_UPDATE)
-			update = true;
+		update = ttype == XBPS_TRANS_UPDATE;
 
 		rv = xbps_configure_pkg(xhp, pkgver, false, update);
 		if (rv != 0) {

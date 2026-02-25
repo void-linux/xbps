@@ -392,17 +392,14 @@ xbps_transaction_update_pkg(struct xbps_handle *xhp, const char *pkg, bool force
 		rdeps = NULL;
 	}
 	for (unsigned int i = 0; i < xbps_array_count(rdeps); i++)  {
+		char pkgname[XBPS_NAME_SIZE];
 		const char *pkgver = NULL;
-		char pkgname[XBPS_NAME_SIZE] = {0};
 
-		if (!xbps_array_get_cstring_nocopy(rdeps, i, &pkgver)) {
-			rv = EINVAL;
-			break;
-		}
-		if (!xbps_pkg_name(pkgname, sizeof(pkgname), pkgver)) {
-			rv = EINVAL;
-			break;
-		}
+		if (!xbps_array_get_cstring_nocopy(rdeps, i, &pkgver))
+			xbps_unreachable();
+		if (!xbps_pkg_name(pkgname, sizeof(pkgname), pkgver))
+			xbps_unreachable();
+
 		rv = trans_find_pkg(xhp, pkgname, false);
 		xbps_dbg_printf("%s: trans_find_pkg %s: %d\n", __func__, pkgver, rv);
 		if (rv && rv != ENOENT && rv != EEXIST && rv != ENODEV) {
@@ -442,17 +439,14 @@ xbps_transaction_install_pkg(struct xbps_handle *xhp, const char *pkg, bool forc
 		rdeps = NULL;
 	}
 	for (unsigned int i = 0; i < xbps_array_count(rdeps); i++)  {
+		char pkgname[XBPS_NAME_SIZE];
 		const char *pkgver = NULL;
-		char pkgname[XBPS_NAME_SIZE] = {0};
 
-		if (!xbps_array_get_cstring_nocopy(rdeps, i, &pkgver)) {
-			rv = EINVAL;
-			break;
-		}
-		if (!xbps_pkg_name(pkgname, sizeof(pkgname), pkgver)) {
-			rv = EINVAL;
-			break;
-		}
+		if (!xbps_array_get_cstring_nocopy(rdeps, i, &pkgver))
+			xbps_unreachable();
+		if (!xbps_pkg_name(pkgname, sizeof(pkgname), pkgver))
+			xbps_unreachable();
+
 		rv = trans_find_pkg(xhp, pkgname, false);
 		xbps_dbg_printf("%s: trans_find_pkg %s: %d\n", __func__, pkgver, rv);
 		if (rv && rv != ENOENT && rv != EEXIST && rv != ENODEV) {

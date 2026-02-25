@@ -26,7 +26,6 @@
 
 #include <errno.h>
 #include <limits.h>
-#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
@@ -122,7 +121,7 @@ download_binpkg(struct xbps_handle *xhp, xbps_dictionary_t repo_pkgd)
 	xbps_set_cb_state(xhp, XBPS_STATE_DOWNLOAD, 0, pkgver,
 		"Downloading `%s' signature (from `%s')...", pkgver, repoloc);
 
-	if ((rv = xbps_fetch_file(xhp, buf, NULL)) == -1) {
+	if (xbps_fetch_file(xhp, buf, NULL) == -1) {
 		rv = fetchLastErrCode ? fetchLastErrCode : errno;
 		fetchstr = xbps_fetch_error_string();
 		xbps_set_cb_state(xhp, XBPS_STATE_DOWNLOAD_FAIL, rv,
@@ -130,15 +129,13 @@ download_binpkg(struct xbps_handle *xhp, xbps_dictionary_t repo_pkgd)
 			pkgver, repoloc, fetchstr ? fetchstr : strerror(rv));
 		return rv;
 	}
-	rv = 0;
 
 	*sigsuffix = '\0';
 
 	xbps_set_cb_state(xhp, XBPS_STATE_DOWNLOAD, 0, pkgver,
 		"Downloading `%s' package (from `%s')...", pkgver, repoloc);
 
-	if ((rv = xbps_fetch_file_sha256(xhp, buf, NULL, digest,
-	    sizeof digest)) == -1) {
+	if (xbps_fetch_file_sha256(xhp, buf, NULL, digest, sizeof digest) == -1) {
 		rv = fetchLastErrCode ? fetchLastErrCode : errno;
 		fetchstr = xbps_fetch_error_string();
 		xbps_set_cb_state(xhp, XBPS_STATE_DOWNLOAD_FAIL, rv,
@@ -146,7 +143,6 @@ download_binpkg(struct xbps_handle *xhp, xbps_dictionary_t repo_pkgd)
 			pkgver, repoloc, fetchstr ? fetchstr : strerror(rv));
 		return rv;
 	}
-	rv = 0;
 
 	xbps_set_cb_state(xhp, XBPS_STATE_VERIFY, 0, pkgver,
 		"%s: verifying RSA signature...", pkgver);
@@ -165,6 +161,7 @@ download_binpkg(struct xbps_handle *xhp, xbps_dictionary_t repo_pkgd)
 	 * If digest is not set, binary package was not downloaded,
 	 * i.e. 304 not modified, verify by file instead.
 	 */
+	rv = 0;
 	if (fetchLastErrCode == FETCH_UNCHANGED) {
 		*sigsuffix = '\0';
 		if (!xbps_verify_file_signature(repo, buf)) {
