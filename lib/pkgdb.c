@@ -68,14 +68,6 @@ xbps_pkgdb_lock(struct xbps_handle *xhp)
 {
 	char path[PATH_MAX];
 	mode_t prev_umask;
-	int r = 0;
-
-	if (access(xhp->rootdir, W_OK) == -1 && errno != ENOENT) {
-		return xbps_error_errno(errno,
-		    "failed to check whether the root directory is writable: "
-		    "%s: %s\n",
-		    xhp->rootdir, strerror(errno));
-	}
 
 	if (xbps_path_join(path, sizeof(path), xhp->metadir, "lock", (char *)NULL) == -1) {
 		return xbps_error_errno(errno,
@@ -83,28 +75,17 @@ xbps_pkgdb_lock(struct xbps_handle *xhp)
 	}
 
 	prev_umask = umask(022);
-
-	/* if metadir does not exist, create it */
-	if (access(xhp->metadir, R_OK|X_OK) == -1) {
-		if (errno != ENOENT) {
-			umask(prev_umask);
-			return xbps_error_errno(errno,
-			    "failed to check access to metadir: %s: %s\n",
-			    xhp->metadir, strerror(-r));
-		}
-		if (xbps_mkpath(xhp->metadir, 0755) == -1 && errno != EEXIST) {
-			umask(prev_umask);
-			return xbps_error_errno(errno,
-			    "failed to create metadir: %s: %s\n",
-			    xhp->metadir, strerror(errno));
-		}
+	if (xbps_mkpath(xhp->metadir, 0755) == -1 && errno != EEXIST) {
+		umask(prev_umask);
+		return xbps_error_errno(errno,
+		    "failed to create metadir: %s: %s\n",
+		    xhp->metadir, strerror(errno));
 	}
 
 	xhp->lock_fd = open(path, O_CREAT|O_WRONLY|O_CLOEXEC, 0664);
-	if (xhp->lock_fd  == -1) {
+	if (xhp->lock_fd == -1) {
 		return xbps_error_errno(errno,
-		    "failed to create lock file: %s: %s\n", path,
-		    strerror(errno));
+		    "failed to lock package database: %s\n", strerror(errno));
 	}
 	umask(prev_umask);
 
