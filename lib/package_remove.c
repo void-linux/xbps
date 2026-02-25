@@ -55,28 +55,24 @@ check_remove_pkg_files(struct xbps_handle *xhp,
 		 * Check if effective user ID owns the file; this is
 		 * enough to ensure the user has write permissions
 		 * on the directory.
+		 * XXX: this isn't really correct, would need to check parent
+		 * directory permissions...
 		 */
-		if (lstat(file, &st) == 0 && euid == st.st_uid) {
-			/* success */
-			continue;
+		if (lstat(file, &st) == 0) {
+			if (euid == st.st_uid)
+				continue;
+			errno = EPERM;
 		}
 		if (errno != ENOENT) {
 			/*
 			 * only bail out if something else than ENOENT
 			 * is returned.
 			 */
-			int rv = errno;
-			if (rv == 0) {
-				/* lstat succeeds but euid != uid */
-				rv = EPERM;
-			}
 			fail = true;
 			xbps_set_cb_state(xhp, XBPS_STATE_REMOVE_FILE_FAIL,
-				rv, pkgver,
-				"%s: cannot remove `%s': %s",
-				pkgver, file, strerror(rv));
+			    errno, pkgver, "%s: cannot remove `%s': %s", pkgver,
+			    file, strerror(errno));
 		}
-		errno = 0;
 	}
 	return fail;
 }
