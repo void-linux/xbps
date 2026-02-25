@@ -161,10 +161,6 @@ fetchList(struct url_list *ue, struct url *URL, const char *pattern,
 		return (fetchListFile(ue, URL, pattern, flags));
 	else if (strcasecmp(URL->scheme, SCHEME_FTP) == 0)
 		return (fetchListFTP(ue, URL, pattern, flags));
-	else if (strcasecmp(URL->scheme, SCHEME_HTTP) == 0)
-		return (fetchListHTTP(ue, URL, pattern, flags));
-	else if (strcasecmp(URL->scheme, SCHEME_HTTPS) == 0)
-		return (fetchListHTTP(ue, URL, pattern, flags));
 	url_seterr(URL_BAD_SCHEME);
 	return -1;
 }

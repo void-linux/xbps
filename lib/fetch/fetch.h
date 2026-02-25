@@ -117,8 +117,6 @@ fetchIO		*fetchXGetHTTP(struct url *, struct url_stat *, const char *);
 fetchIO		*fetchGetHTTP(struct url *, const char *);
 fetchIO		*fetchPutHTTP(struct url *, const char *);
 int		 fetchStatHTTP(struct url *, struct url_stat *, const char *);
-int		 fetchListHTTP(struct url_list *, struct url *, const char *,
-		    const char *);
 
 /* FTP-specific functions */
 fetchIO		*fetchXGetFTP(struct url *, struct url_stat *, const char *);
