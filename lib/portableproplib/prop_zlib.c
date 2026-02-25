@@ -87,7 +87,7 @@ prop ## type ## _internalize_from_zfile(const char *fname)				\
 											\
 	/* 15+16 to use gzip method */							\
 	if (inflateInit2(&strm, 15+16) != Z_OK)						\
-		goto out2;								\
+		goto out1;								\
 											\
 	strm.avail_in = mf->poimf_mapsize;						\
 	strm.next_in = (unsigned char *)mf->poimf_xml;					\
@@ -103,7 +103,7 @@ prop ## type ## _internalize_from_zfile(const char *fname)				\
 		case Z_NEED_DICT:							\
 		case Z_MEM_ERROR:							\
 			errno = EINVAL;							\
-			goto out1;							\
+			goto out2;							\
 		}									\
 		have = _READ_CHUNK - strm.avail_out;					\
 		totalsize += have;							\
