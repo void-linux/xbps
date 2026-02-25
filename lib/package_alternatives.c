@@ -168,7 +168,7 @@ create_symlinks(struct xbps_handle *xhp, xbps_array_t a, const char *grname)
 		if (!(tok1 = strtok(alternative, ":")) ||
 		    !(tok2 = strtok(NULL, ":"))) {
 			free(alternative);
-			return -1;
+			return EINVAL;
 		}
 
 		target = strdup(tok2);
