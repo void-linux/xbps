@@ -28,7 +28,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
-#include <ctype.h>
 #include <assert.h>
 #include <unistd.h>
 #include <limits.h>
@@ -317,9 +316,7 @@ dist_upgrade(struct xbps_handle *xhp, unsigned int cols, bool yes, bool drun)
 		xbps_error_printf("No packages currently registered.\n");
 		return 0;
 	} else if (rv == EBUSY) {
-		if (drun) {
-			rv = 0;
-		} else {
+		if (!drun) {
 			xbps_error_printf("The 'xbps' package must be updated, please run `xbps-install -u xbps`\n");
 			return rv;
 		}
