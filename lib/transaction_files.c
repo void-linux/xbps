@@ -51,7 +51,7 @@ struct item {
 		const char *pkgname;
 		const char *pkgver;
 		char *sha256;
-		const char *target;
+		char *target;
 		uint64_t size;
 		enum type type;
 		/* index is the index of the package update/install/removal in the transaction
@@ -534,7 +534,8 @@ add:
 		item->old.preserve = preserve;
 		item->old.update = update;
 		item->old.removepkg = removepkg;
-		item->old.target = target;
+		if (target)
+			item->old.target = strdup(target);
 		if (sha256)
 			item->old.sha256 = strdup(sha256);
 	} else {
@@ -546,7 +547,8 @@ add:
 		item->new.preserve = preserve;
 		item->new.update = update;
 		item->new.removepkg = removepkg;
-		item->new.target = target;
+		if (target)
+			item->new.target = strdup(target);
 	}
 	if (item->old.type && item->new.type) {
 		/*
@@ -777,6 +779,8 @@ cleanup(void)
 		free(item->file);
 		free(item->old.sha256);
 		free(item->new.sha256);
+		free(item->old.target);
+		free(item->new.target);
 		free(item);
 	}
 	free(items);
@@ -874,6 +878,7 @@ xbps_transaction_files(struct xbps_handle *xhp, xbps_object_iterator_t iter)
 			    update, removepkg, preserve, true);
 			if (rv != 0)
 				goto out;
+			xbps_object_release(filesd);
 		}
 	}
 	xbps_object_iterator_reset(iter);
