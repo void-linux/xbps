@@ -29,6 +29,7 @@
  * From FreeBSD fetch(8):
  * $FreeBSD: src/usr.bin/fetch/fetch.c,v 1.84.2.1 2009/08/03 08:13:06 kensmith Exp $
  */
+#include <sys/file.h>
 #include <sys/param.h>
 #include <sys/stat.h>
 #include <sys/time.h>
@@ -94,19 +95,64 @@ xbps_fetch_error_string(void)
 	return fetchLastErrString;
 }
 
-int
-xbps_fetch_file_dest_sha256(struct xbps_handle *xhp, const char *uri, const char *filename, const char *flags, unsigned char *digest, size_t digestlen)
+static int
+acquire_lock(char *lockfile, size_t lockfilesz, const char *filename)
 {
-	struct stat st, st_tmpfile, *stp;
+	int fd;
+	int r;
+
+	r = snprintf(lockfile, lockfilesz, "%s.lock", filename);
+	if (r < 0 || (size_t)r >= lockfilesz) {
+		errno = ENAMETOOLONG;
+		return -1;
+	}
+
+	fd = open(lockfile, O_RDWR|O_CREAT|O_CLOEXEC, 0600);
+	if (fd == -1)
+		return -errno;
+
+	if (flock(fd, LOCK_EX|LOCK_NB) == -1) {
+		if (errno == EWOULDBLOCK)
+			xbps_warn_printf(
+			    "%s: file locked, waiting...\n", filename);
+		if (errno != EWOULDBLOCK || flock(fd, LOCK_EX) == -1) {
+			r = -errno;
+			(void) close(fd);
+			return r;
+		}
+	}
+
+	return fd;
+}
+
+static void
+release_lock(const char *lockfile, int lockfd)
+{
+	(void) close(lockfd);
+	if (remove(lockfile) == -1 && errno != ENOENT) {
+		xbps_warn_printf("failed to remove lock file: %s: %s\n",
+		    lockfile, strerror(errno));
+	}
+}
+
+int
+xbps_fetch_file_dest_sha256(struct xbps_handle *xhp, const char *uri,
+    const char *filename, const char *flags, unsigned char *digest,
+    size_t digestlen)
+{
+	char buf[BUFSIZ];
+	char tempfile[PATH_MAX];
+	char lockfile[PATH_MAX];
+	struct stat st = {0}, st_tmpfile = {0}, *stp;
 	struct url *url = NULL;
 	struct url_stat url_st;
 	struct fetchIO *fio = NULL;
 	struct timespec ts[2];
 	off_t bytes_dload = 0;
 	ssize_t bytes_read = 0, bytes_written = 0;
-	char buf[4096], *tempfile = NULL;
 	char fetch_flags[8];
 	int fd = -1, rv = 0;
+	int lockfd = -1;
 	bool refetch = false, restart = false;
 	SHA256_CTX sha256;
 
@@ -132,34 +178,46 @@ xbps_fetch_file_dest_sha256(struct xbps_handle *xhp, const char *uri, const char
 	if (flags != NULL)
 		xbps_strlcpy(fetch_flags, flags, 7);
 
-	tempfile = xbps_xasprintf("%s.part", filename);
-	/*
-	 * Check if we have to resume a transfer.
-	 */
-	memset(&st_tmpfile, 0, sizeof(st_tmpfile));
-	if (stat(tempfile, &st_tmpfile) == 0) {
-		if (st_tmpfile.st_size > 0)
-			restart = true;
-	} else {
-		if (errno != ENOENT) {
-			rv = -1;
-			goto fetch_file_out;
-		}
+	rv = snprintf(tempfile, sizeof(tempfile), "%s.part", filename);
+	if (rv < 0 || (size_t)rv >= sizeof(tempfile)) {
+		errno = ENAMETOOLONG;
+		return -1;
 	}
+
+	lockfd = acquire_lock(lockfile, sizeof(lockfile), filename);
+	if (lockfd < 0) {
+		xbps_error_printf("failed to lock file: %s: %s\n", filename,
+		    strerror(-lockfd));
+		return -1;
+	}
+
 	/*
 	 * Check if we have to refetch a transfer.
 	 */
-	memset(&st, 0, sizeof(st));
 	if (stat(filename, &st) == 0) {
 		refetch = true;
 		url->last_modified = st.st_mtime;
 		xbps_strlcat(fetch_flags, "i", sizeof(fetch_flags));
-	} else {
-		if (errno != ENOENT) {
-			rv = -1;
-			goto fetch_file_out;
-		}
+	} else if (errno != ENOENT) {
+		xbps_error_printf("failed to stat target file: %s: %s\n",
+		    filename, strerror(errno));
+		rv = -1;
+		goto fetch_file_out;
 	}
+
+	/*
+	 * Check if we have to resume a transfer.
+	 */
+	if (stat(tempfile, &st_tmpfile) == 0) {
+		if (st_tmpfile.st_size > 0)
+			restart = true;
+	} else if (errno != ENOENT) {
+		xbps_error_printf("failed to stat temporary file: %s: %s\n",
+		    tempfile, strerror(errno));
+		rv = -1;
+		goto fetch_file_out;
+	}
+
 	if (refetch && !restart) {
 		/* fetch the whole file, filename available */
 		stp = &st;
@@ -184,6 +242,7 @@ xbps_fetch_file_dest_sha256(struct xbps_handle *xhp, const char *uri, const char
 	if (fio == NULL) {
 		if (fetchLastErrCode == FETCH_UNCHANGED) {
 			/* Last-Modified matched */
+			rv = 0;
 			goto fetch_file_out;
 		} else if (fetchLastErrCode == FETCH_PROTO && url_st.size == stp->st_size) {
 			/* 413, requested offset == length */
@@ -312,7 +371,8 @@ xbps_fetch_file_dest_sha256(struct xbps_handle *xhp, const char *uri, const char
 rename_file:
 	/* File downloaded successfully, rename to destfile */
 	if (rename(tempfile, filename) == -1) {
-		xbps_dbg_printf("failed to rename %s to %s: %s",
+		xbps_error_printf(
+		    "failed to rename temporary file: %s: to: %s: %s\n",
 		    tempfile, filename, strerror(errno));
 		rv = -1;
 		goto fetch_file_out;
@@ -329,9 +389,8 @@ fetch_file_out:
 		(void)close(fd);
 	if (url != NULL)
 		fetchFreeURL(url);
-
-	free(tempfile);
-
+	if (lockfd != -1)
+		release_lock(lockfile, lockfd);
 	return rv;
 }
 
