@@ -23,10 +23,7 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <errno.h>
 
 #include "xbps_api_impl.h"
 
@@ -34,6 +31,7 @@ bool HIDDEN
 xbps_transaction_store(struct xbps_handle *xhp, xbps_array_t pkgs,
 		xbps_dictionary_t pkgrd, bool autoinst)
 {
+	bool alloc_replaces = false;
 	xbps_dictionary_t d, pkgd;
 	xbps_array_t replaces;
 	const char *pkgver, *pkgname, *curpkgver, *repo;
@@ -84,15 +82,26 @@ xbps_transaction_store(struct xbps_handle *xhp, xbps_array_t pkgs,
 	/*
 	 * Set a replaces to itself, so that virtual packages are always replaced.
 	*/
-	if ((replaces = xbps_dictionary_get(pkgd, "replaces")) == NULL)
+	if ((replaces = xbps_dictionary_get(pkgd, "replaces")) == NULL) {
 		replaces = xbps_array_create();
+		if (!replaces) {
+			xbps_error_oom();
+			goto err;
+		}
+		alloc_replaces = true;
+	}
 
 	self_replaced = xbps_xasprintf("%s>=0", pkgname);
 	xbps_array_add_cstring(replaces, self_replaced);
 	free(self_replaced);
 
-	if (!xbps_dictionary_set(pkgd, "replaces", replaces))
+	if (!xbps_dictionary_set(pkgd, "replaces", replaces)) {
+		if (alloc_replaces)
+			xbps_object_release(replaces);
 		goto err;
+	}
+	if (alloc_replaces)
+		xbps_object_release(replaces);
 
 	/*
 	 * Add the dictionary into the unsorted queue.
