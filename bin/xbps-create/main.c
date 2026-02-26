@@ -835,14 +835,13 @@ process_archive(struct archive *ar,
 	/* Add all package data files and release resources */
 	while ((xe = TAILQ_FIRST(&xentry_list)) != NULL) {
 		TAILQ_REMOVE(&xentry_list, xe, entries);
-		if (xe->type == ENTRY_TYPE_METADATA || xe->type == ENTRY_TYPE_DIRS)
-			continue;
-
-		if (!quiet) {
-			printf("%s: adding `%s' ...\n", pkgver, xe->file);
-			fflush(stdout);
+		if (xe->type != ENTRY_TYPE_METADATA && xe->type != ENTRY_TYPE_DIRS) {
+			if (!quiet) {
+				printf("%s: adding `%s' ...\n", pkgver, xe->file);
+				fflush(stdout);
+			}
+			process_entry_file(ar, resolver, xe, NULL);
 		}
-		process_entry_file(ar, resolver, xe, NULL);
 		free(xe->file);
 		free(xe->target);
 		free(xe);
