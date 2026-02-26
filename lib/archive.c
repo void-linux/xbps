@@ -58,7 +58,6 @@ xbps_archive_get_file(struct archive *ar, struct archive_entry *entry)
 	buf = malloc(len + 1);
 	if (!buf) {
 		xbps_error_oom();
-		errno = ENOMEM;
 		return NULL;
 	}
 
@@ -246,9 +245,8 @@ xbps_archive_read_open_remote(struct archive *ar, const char *url)
 
 	f = calloc(1, sizeof(*f));
 	if (!f) {
-		r = -errno;
 		fetchFreeURL(furl);
-		return r;
+		return xbps_error_oom();
 	}
 	f->url = furl;
 

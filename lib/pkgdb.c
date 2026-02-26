@@ -125,24 +125,20 @@ pkgdb_map_vpkgs(struct xbps_handle *xhp)
 	if (!xbps_dictionary_count(xhp->pkgdb))
 		return 0;
 
-	if (xhp->vpkgd == NULL) {
+	if (!xhp->vpkgd) {
+		// XXX: this is useless, xbps_init already creates it...
+		// should probably be removed from there...
 		xhp->vpkgd = xbps_dictionary_create();
-		if (!xhp->vpkgd) {
-			r = -errno;
-			xbps_error_printf("failed to create dictionary\n");
-			return r;
-		}
+		if (!xhp->vpkgd)
+			return xbps_error_oom();
 	}
 
 	/*
 	 * This maps all pkgs that have virtualpkgs in pkgdb.
 	 */
 	iter = xbps_dictionary_iterator(xhp->pkgdb);
-	if (!iter) {
-		r = -errno;
-		xbps_error_printf("failed to create iterator");
-		return r;
-	}
+	if (!iter)
+		return xbps_error_oom();
 
 	while ((obj = xbps_object_iterator_next(iter))) {
 		xbps_array_t provides;
@@ -177,13 +173,11 @@ pkgdb_map_vpkgs(struct xbps_handle *xhp)
 			if (!providers) {
 				providers = xbps_dictionary_create();
 				if (!providers) {
-					r = -errno;
-					xbps_error_printf("failed to create dictionary\n");
+					r = xbps_error_oom();
 					goto out;
 				}
 				if (!xbps_dictionary_set(xhp->vpkgd, vpkgname, providers)) {
-					r = -errno;
-					xbps_error_printf("failed to set dictionary entry\n");
+					r = xbps_error_errno(errno, "failed to set dictionary entry\n");
 					xbps_object_release(providers);
 					goto out;
 				}
@@ -212,7 +206,7 @@ pkgdb_map_names(struct xbps_handle *xhp)
 {
 	xbps_object_iterator_t iter;
 	xbps_object_t obj;
-	int rv = 0;
+	int r = 0;
 
 	if (!xbps_dictionary_count(xhp->pkgdb))
 		return 0;
@@ -222,34 +216,37 @@ pkgdb_map_names(struct xbps_handle *xhp)
 	 * This way we do it once and not multiple times.
 	 */
 	iter = xbps_dictionary_iterator(xhp->pkgdb);
-	assert(iter);
+	if (!iter)
+		return xbps_error_oom();
 
 	while ((obj = xbps_object_iterator_next(iter))) {
 		xbps_dictionary_t pkgd;
-		const char *pkgver;
-		char pkgname[XBPS_NAME_SIZE] = {0};
+		const char *pkgname;
+
+		pkgname = xbps_dictionary_keysym_cstring_nocopy(obj);
+
+		// ignore internal objs
+		if (strncmp(pkgname, "_XBPS_", 6) == 0)
+			continue;
 
 		pkgd = xbps_dictionary_get_keysym(xhp->pkgdb, obj);
-		if (!xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver)) {
+		if (!pkgd)
+			xbps_unreachable();
+		if (xbps_dictionary_get(pkgd, "pkgname"))
 			continue;
-		}
-		if (!xbps_pkg_name(pkgname, sizeof(pkgname), pkgver)) {
-			rv = EINVAL;
-			break;
-		}
 		if (!xbps_dictionary_set_cstring(pkgd, "pkgname", pkgname)) {
-			rv = EINVAL;
+			r = xbps_error_oom();
 			break;
 		}
 	}
 	xbps_object_iterator_release(iter);
-	return rv;
+	return r;
 }
 
 int HIDDEN
 xbps_pkgdb_init(struct xbps_handle *xhp)
 {
-	int rv;
+	int r;
 
 	assert(xhp);
 
@@ -264,22 +261,19 @@ xbps_pkgdb_init(struct xbps_handle *xhp)
 		return rv;
 #endif
 
+	r = xbps_pkgdb_update(xhp, false, true);
+	if (r != 0) {
+		return -r;
+	}
 
-	if ((rv = xbps_pkgdb_update(xhp, false, true)) != 0) {
-		if (rv != ENOENT)
-			xbps_error_printf("failed to initialize pkgdb: %s\n", strerror(rv));
-		return rv;
-	}
-	if ((rv = pkgdb_map_names(xhp)) != 0) {
-		xbps_dbg_printf("[pkgdb] pkgdb_map_names %s\n", strerror(rv));
-		return rv;
-	}
-	if ((rv = pkgdb_map_vpkgs(xhp)) != 0) {
-		xbps_dbg_printf("[pkgdb] pkgdb_map_vpkgs %s\n", strerror(rv));
-		return rv;
-	}
-	assert(xhp->pkgdb);
-	xbps_dbg_printf("[pkgdb] initialized ok.\n");
+	r = pkgdb_map_names(xhp);
+	if (r < 0)
+		return xbps_error_errno(
+		    r, "failed to add pkgname properties: %s\n", strerror(-r));
+
+	r = pkgdb_map_vpkgs(xhp);
+	if (r < 0)
+		return r;
 
 	return 0;
 }
@@ -323,8 +317,13 @@ xbps_pkgdb_update(struct xbps_handle *xhp, bool flush, bool update)
 		if (!rv)
 			rv = EINVAL;
 
-		if (rv == ENOENT)
+		if (rv == ENOENT) {
 			xhp->pkgdb = xbps_dictionary_create();
+			if (!xhp->pkgdb) {
+				xbps_error_oom();
+				rv = ENOMEM;
+			}
+		}
 		else
 			xbps_error_printf("cannot access to pkgdb: %s\n", strerror(rv));
 

@@ -124,35 +124,45 @@ store_virtualpkg(struct xbps_handle *xhp, const char *path, size_t line, char *v
 	return 0;
 }
 
-static void
+static int
 store_preserved_file(struct xbps_handle *xhp, const char *file)
 {
+	char path[PATH_MAX];
 	glob_t globbuf;
-	char *p = NULL, *rfile = NULL;
+	char *p = NULL;
 	size_t len;
-	int rv = 0;
+	int r;
 
-	if (xhp->preserved_files == NULL) {
+	if (!xhp->preserved_files) {
 		xhp->preserved_files = xbps_array_create();
-		assert(xhp->preserved_files);
+		if (!xhp->preserved_files)
+			return xbps_error_oom();
 	}
 
-	rfile = xbps_xasprintf("%s%s", xhp->rootdir, file);
+	if (xbps_path_join(path, sizeof(path), xhp->rootdir, file, (char *)NULL) == -1)
+		return -errno;
 
-	rv = glob(rfile, 0, NULL, &globbuf);
-	if (rv == GLOB_NOMATCH) {
+	r = glob(path, 0, NULL, &globbuf);
+	if (r == GLOB_NOMATCH) {
 		if (xbps_match_string_in_array(xhp->preserved_files, file))
 			goto out;
 		xbps_array_add_cstring(xhp->preserved_files, file);
 		xbps_dbg_printf("Added preserved file: %s\n", file);
+		r = 0;
 		goto out;
-	} else if (rv != 0) {
+	} else if (r == GLOB_NOSPACE) {
+		r = xbps_error_oom();
+		goto out;
+	} else if (r != 0) {
+		r = xbps_error_errno(errno, "glob failed: %s\n", strerror(errno));
 		goto out;
 	}
+	r = 0;
 	for (size_t i = 0; i < globbuf.gl_pathc; i++) {
 		if (xbps_match_string_in_array(xhp->preserved_files, globbuf.gl_pathv[i]))
 			continue;
 
+		// XXX: clean this up
 		len = strlen(globbuf.gl_pathv[i]) - strlen(xhp->rootdir) + 1;
 		p = malloc(len);
 		assert(p);
@@ -163,7 +173,7 @@ store_preserved_file(struct xbps_handle *xhp, const char *file)
 	}
 out:
 	globfree(&globbuf);
-	free(rfile);
+	return r;
 }
 
 static bool
@@ -175,28 +185,34 @@ store_repo(struct xbps_handle *xhp, const char *repo)
 	return xbps_repo_store(xhp, repo);
 }
 
-static void
+static int
 store_ignored_pkg(struct xbps_handle *xhp, const char *pkgname)
 {
-	if (xhp->ignored_pkgs == NULL) {
+	if (!xhp->ignored_pkgs) {
 		xhp->ignored_pkgs = xbps_array_create();
-		assert(xhp->ignored_pkgs);
+		if (!xhp->ignored_pkgs)
+			return xbps_error_oom();
 	}
-	xbps_array_add_cstring(xhp->ignored_pkgs, pkgname);
+	if (!xbps_array_add_cstring(xhp->ignored_pkgs, pkgname))
+		return xbps_error_oom();
 	xbps_dbg_printf("Added ignored package: %s\n", pkgname);
+	return 0;
 }
 
-static void
+static int
 store_noextract(struct xbps_handle *xhp, const char *value)
 {
 	if (*value == '\0')
-		return;
-	if (xhp->noextract == NULL) {
+		return 0;
+	if (!xhp->noextract) {
 		xhp->noextract = xbps_array_create();
-		assert(xhp->noextract);
+		if (!xhp->noextract)
+			return xbps_error_oom();
 	}
-	xbps_array_add_cstring(xhp->noextract, value);
+	if (!xbps_array_add_cstring(xhp->noextract, value))
+		return xbps_error_oom();
 	xbps_dbg_printf("Added noextract pattern: %s\n", value);
+	return 0;
 }
 
 enum {
@@ -291,20 +307,23 @@ static int
 parse_files_glob(struct xbps_handle *xhp, xbps_dictionary_t seen,
     const char *cwd, const char *pat, bool nested)
 {
-	char tmppath[PATH_MAX];
+	char path[PATH_MAX];
 	glob_t globbuf;
-	int rs, rv = 0, rv2;
+	int r = 0;
 
-	rs = snprintf(tmppath, PATH_MAX, "%s/%s",
-	    pat[0] == '/' ? xhp->rootdir : cwd, pat);
-	if (rs < 0 || rs >= PATH_MAX)
-		return ENOMEM;
+	if (xbps_path_join(path, sizeof(path),
+	        pat[0] == '/' ? xhp->rootdir : cwd, pat, (char *)NULL) == -1)
+		return -ENAMETOOLONG;
 
-	switch (glob(tmppath, 0, NULL, &globbuf)) {
-	case 0: break;
-	case GLOB_NOSPACE: return ENOMEM;
-	case GLOB_NOMATCH: return 0;
-	default: return 0;
+	switch (glob(path, 0, NULL, &globbuf)) {
+	case 0:
+		break;
+	case GLOB_NOSPACE:
+		r = xbps_error_oom();
+		goto out;
+	case GLOB_NOMATCH:
+	default:
+		goto out;
 	}
 	for (size_t i = 0; i < globbuf.gl_pathc; i++) {
 		if (seen != NULL) {
@@ -313,14 +332,28 @@ parse_files_glob(struct xbps_handle *xhp, xbps_dictionary_t seen,
 			fname = basename(globbuf.gl_pathv[i]);
 			if (xbps_dictionary_get_bool(seen, fname, &mask) && mask)
 				continue;
-			xbps_dictionary_set_bool(seen, fname, true);
+			if (!xbps_dictionary_set_bool(seen, fname, true)) {
+				r = xbps_error_oom();
+				goto out;
+			}
 		}
-		if ((rv2 = parse_file(xhp, globbuf.gl_pathv[i], nested)) != 0)
-			rv = rv2;
+		r = parse_file(xhp, globbuf.gl_pathv[i], nested);
+		if (r < 0)
+			goto out;
 	}
+	r = 0;
+out:
 	globfree(&globbuf);
+	return r;
+}
 
-	return rv;
+static int
+store_string(char *dst, size_t dstsz, const char *src)
+{
+	size_t n = strlcpy(dst, src, dstsz);
+	if (n >= dstsz)
+		return -ENOBUFS;
+	return 0;
 }
 
 static int
@@ -330,14 +363,14 @@ parse_file(struct xbps_handle *xhp, const char *path, bool nested)
 	size_t len, nlines = 0;
 	ssize_t rd;
 	char *linebuf = NULL;
-	int rv = 0;
-	int size, rs;
+	int r = 0;
 	char *dir;
 
-	if ((fp = fopen(path, "r")) == NULL) {
-		rv = errno;
-		xbps_error_printf("cannot read configuration file %s: %s\n", path, strerror(rv));
-		return rv;
+	fp = fopen(path, "r");
+	if (!fp) {
+		return xbps_error_errno(errno,
+		    "cannot read configuration file %s: %s\n", path,
+		    strerror(errno));
 	}
 
 	xbps_dbg_printf("Parsing configuration file: %s\n", path);
@@ -367,30 +400,21 @@ parse_file(struct xbps_handle *xhp, const char *path, bool nested)
 			    "line %zu\n", path, nlines);
 			continue;
 		case KEY_ROOTDIR:
-			size = sizeof xhp->rootdir;
-			rs = snprintf(xhp->rootdir, size, "%s", val);
-			if (rs < 0 || rs >= size) {
-				rv = ENOMEM;
+			r = store_string(xhp->rootdir, sizeof(xhp->rootdir), val);
+			if (r < 0)
 				break;
-			}
 			xbps_dbg_printf("%s: rootdir set to %s\n", path, val);
 			break;
 		case KEY_CACHEDIR:
-			size = sizeof xhp->cachedir;
-			rs = snprintf(xhp->cachedir, size, "%s", val);
-			if (rs < 0 || rs >= size) {
-				rv = ENOMEM;
+			r = store_string(xhp->cachedir, sizeof(xhp->cachedir), val);
+			if (r < 0)
 				break;
-			}
 			xbps_dbg_printf("%s: cachedir set to %s\n", path, val);
 			break;
 		case KEY_ARCHITECTURE:
-			size = sizeof xhp->native_arch;
-			rs = snprintf(xhp->native_arch, size, "%s", val);
-			if (rs < 0 || rs >= size) {
-				rv = ENOMEM;
+			r = store_string(xhp->native_arch, sizeof(xhp->native_arch), val);
+			if (r < 0)
 				break;
-			}
 			xbps_dbg_printf("%s: native architecture set to %s\n", path,
 			    val);
 			break;
@@ -417,15 +441,10 @@ parse_file(struct xbps_handle *xhp, const char *path, bool nested)
 				xbps_dbg_printf("%s: added repository %s\n", path, val);
 			break;
 		case KEY_VIRTUALPKG:
-			rv = store_virtualpkg(xhp, path, nlines, val);
-			if (rv < 0) {
-				rv = -rv;
-				break;
-			}
-			rv = 0;
+			r = store_virtualpkg(xhp, path, nlines, val);
 			break;
 		case KEY_PRESERVE:
-			store_preserved_file(xhp, val);
+			r = store_preserved_file(xhp, val);
 			break;
 		case KEY_KEEPCONF:
 			if (strcasecmp(val, "true") == 0) {
@@ -446,10 +465,10 @@ parse_file(struct xbps_handle *xhp, const char *path, bool nested)
 			}
 			break;
 		case KEY_IGNOREPKG:
-			store_ignored_pkg(xhp, val);
+			r = store_ignored_pkg(xhp, val);
 			break;
 		case KEY_NOEXTRACT:
-			store_noextract(xhp, val);
+			r = store_noextract(xhp, val);
 			break;
 		case KEY_INCLUDE:
 			/* Avoid double-nested parsing, only allow it once */
@@ -458,7 +477,7 @@ parse_file(struct xbps_handle *xhp, const char *path, bool nested)
 				continue;
 			}
 			dir = strdup(path);
-			rv = parse_files_glob(xhp, NULL, dirname(dir), val, true);
+			r = parse_files_glob(xhp, NULL, dirname(dir), val, true);
 			free(dir);
 			break;
 		}
@@ -466,31 +485,34 @@ parse_file(struct xbps_handle *xhp, const char *path, bool nested)
 	free(linebuf);
 	fclose(fp);
 
-	return rv;
+	return r;
 }
 
 int HIDDEN
 xbps_conf_init(struct xbps_handle *xhp)
 {
 	xbps_dictionary_t seen;
-	int rv = 0;
+	int r = 0;
 
 	assert(xhp);
 	seen = xbps_dictionary_create();
 	assert(seen);
 
-	if (*xhp->confdir) {
+	if (xhp->confdir[0]) {
 		xbps_dbg_printf("Processing configuration directory: %s\n", xhp->confdir);
-		if ((rv = parse_files_glob(xhp, seen, xhp->confdir, "*.conf", false)))
+		r = parse_files_glob(xhp, seen, xhp->confdir, "*.conf", false);
+		if (r < 0)
 			goto out;
 	}
-	if (*xhp->sysconfdir) {
+	if (xhp->sysconfdir[0]) {
 		xbps_dbg_printf("Processing system configuration directory: %s\n", xhp->sysconfdir);
-		if ((rv = parse_files_glob(xhp, seen, xhp->sysconfdir, "*.conf", false)))
+		r = parse_files_glob(
+		    xhp, seen, xhp->sysconfdir, "*.conf", false);
+		if (r < 0)
 			goto out;
 	}
 
 out:
 	xbps_object_release(seen);
-	return rv;
+	return r;
 }
