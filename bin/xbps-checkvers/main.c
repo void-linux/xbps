@@ -791,7 +791,7 @@ main(int argc, char **argv)
 		free(tmp);
 	}
 
-	rcv.cachefile = xbps_xasprintf("%s/.xbps-checkvers-0.58.plist", rcv.distdir);
+	rcv.cachefile = xbps_xasprintf("%s/.xbps-checkvers-%s.plist", rcv.distdir, XBPS_VERSION);
 
 	argc -= optind;
 	argv += optind;
