@@ -160,7 +160,13 @@ xbps_find_pkg_orphans(struct xbps_handle *xhp, xbps_array_t orphans_user)
 		pkgd = xbps_array_get(array, i);
 		xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
 		rdeps = xbps_pkgdb_get_pkg_fulldeptree(xhp, pkgver);
+		if (!rdeps) {
+			// XXX: we should probably abort.
+			xbps_error_printf("failed to get reverse dependencies: %s\n", strerror(errno));
+			continue;
+		}
 		if (xbps_array_count(rdeps) == 0) {
+			xbps_object_release(rdeps);
 			continue;
 		}
 
@@ -199,6 +205,7 @@ xbps_find_pkg_orphans(struct xbps_handle *xhp, xbps_array_t orphans_user)
 				xbps_dbg_printf(" added %s orphan\n", deppkgver);
 			}
 		}
+		xbps_object_release(rdeps);
 	}
 
 	return array;
