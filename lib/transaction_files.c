@@ -887,7 +887,8 @@ xbps_transaction_files(struct xbps_handle *xhp, xbps_object_iterator_t iter)
 	 * Sort items by path length, to make it easier to find files in
 	 * directories.
 	 */
-	qsort(items, itemsidx, sizeof (struct item *), pathcmp);
+	if (items)
+		qsort(items, itemsidx, sizeof (struct item *), pathcmp);
 
 	if (chdir(xhp->rootdir) == -1) {
 		rv = errno;
