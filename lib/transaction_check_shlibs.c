@@ -1,5 +1,6 @@
 /*-
  * Copyright (c) 2014-2020 Juan Romero Pardines.
+ * Copyright (c) 2025-2026 Duncan Overbruck <mail@duncano.de>.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -56,6 +57,10 @@ struct shlib_entry {
 struct shlib_ctx {
 	struct xbps_handle *xhp;
 	struct shlib_entry *entries;
+	// XXX: _32bit is a big hack because there is nothing allowing us
+	// to separate 32bit shlibs from normal shlibs, so we collect them
+	// in a separate hashmap based on the package name ending with `-32bit`.
+	struct shlib_entry *entries_32bit;
 	xbps_dictionary_t seen;
 	xbps_array_t missing;
 };
@@ -69,9 +74,9 @@ shlib_entry_find(struct shlib_entry *head, const char *name)
 }
 
 static struct shlib_entry *
-shlib_entry_get(struct shlib_ctx *ctx, const char *name)
+shlib_entry_get(struct shlib_entry **head, const char *name)
 {
-	struct shlib_entry *res = shlib_entry_find(ctx->entries, name);
+	struct shlib_entry *res = shlib_entry_find(*head, name);
 	if (res)
 		return res;
 	res = calloc(1, sizeof(*res));
@@ -80,23 +85,32 @@ shlib_entry_get(struct shlib_ctx *ctx, const char *name)
 		return NULL;
 	}
 	res->name = name;
-	HASH_ADD_STR(ctx->entries, name, res);
+	HASH_ADD_STR(*head, name, res);
 	return res;
 }
 
 static int
-collect_shlib_array(struct shlib_ctx *ctx, xbps_array_t array)
+collect_shlib_array(struct shlib_entry **head, xbps_array_t array)
 {
 	for (unsigned int i = 0; i < xbps_array_count(array); i++) {
 		struct shlib_entry *entry;
 		const char *shlib = NULL;
 		if (!xbps_array_get_cstring_nocopy(array, i, &shlib))
 			return -EINVAL;
-		entry = shlib_entry_get(ctx, shlib);
+		entry = shlib_entry_get(head, shlib);
 		if (!entry)
 			return -errno;
 	}
 	return 0;
+}
+
+static bool
+endswith(const char *s, const char *end, size_t len)
+{
+	size_t slen = strlen(s);
+	if (slen <= len)
+		return false;
+	return strcmp(s + (slen - len), end) == 0;
 }
 
 static int
@@ -134,7 +148,11 @@ collect_shlibs(struct shlib_ctx *ctx, xbps_array_t pkgs)
 
 		array = xbps_dictionary_get(pkgd, "shlib-provides");
 		if (array) {
-			int r = collect_shlib_array(ctx, array);
+			bool is32bit =
+			    endswith(pkgname, "-32bit", sizeof("-32bit") - 1);
+			int r = collect_shlib_array(
+			    !is32bit ? &ctx->entries : &ctx->entries_32bit,
+			    array);
 			if (r < 0)
 				return r;
 		}
@@ -161,7 +179,11 @@ collect_shlibs(struct shlib_ctx *ctx, xbps_array_t pkgs)
 
 		array = xbps_dictionary_get(pkgd, "shlib-provides");
 		if (array) {
-			int r = collect_shlib_array(ctx, array);
+			bool is32bit =
+			    endswith(pkgname, "-32bit", sizeof("-32bit") - 1);
+			int r = collect_shlib_array(
+			    !is32bit ? &ctx->entries : &ctx->entries_32bit,
+			    array);
 			if (r < 0)
 				return r;
 		}
@@ -174,6 +196,7 @@ collect_shlibs(struct shlib_ctx *ctx, xbps_array_t pkgs)
 static int
 check_shlibs(struct shlib_ctx *ctx, xbps_array_t pkgs)
 {
+	char msg[1024];
 	xbps_object_iterator_t iter;
 	xbps_object_t obj;
 
@@ -181,9 +204,16 @@ check_shlibs(struct shlib_ctx *ctx, xbps_array_t pkgs)
 		xbps_array_t array;
 		xbps_dictionary_t pkgd = xbps_array_get(pkgs, i);
 		xbps_trans_type_t ttype = xbps_transaction_pkg_type(pkgd);
+		const char *pkgname = NULL;
+		bool is32bit;
 
 		if (ttype == XBPS_TRANS_HOLD || ttype == XBPS_TRANS_REMOVE)
 			continue;
+
+		if (!xbps_dictionary_get_cstring_nocopy(pkgd, "pkgname", &pkgname))
+			return -EINVAL;
+
+		is32bit = endswith(pkgname, "-32bit", sizeof("-32bit") - 1);
 
 		array = xbps_dictionary_get(pkgd, "shlib-requires");
 		if (!array)
@@ -191,17 +221,16 @@ check_shlibs(struct shlib_ctx *ctx, xbps_array_t pkgs)
 		for (unsigned int j = 0; j < xbps_array_count(array); j++) {
 			const char *pkgver = NULL;
 			const char *shlib = NULL;
-			char *missing;
 			if (!xbps_array_get_cstring_nocopy(array, j, &shlib))
 				return -EINVAL;
-			if (shlib_entry_find(ctx->entries, shlib))
+			if (shlib_entry_find(!is32bit ? ctx->entries : ctx->entries_32bit, shlib))
 				continue;
 			if (!xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver))
 				return -EINVAL;
-			missing = xbps_xasprintf(
-			    "%s: broken, unresolvable shlib `%s'",
-			    pkgver, shlib);
-			if (!xbps_array_add_cstring_nocopy(ctx->missing, missing))
+			snprintf(msg, sizeof(msg),
+			    "%s: broken, unresolvable shlib `%s'", pkgver,
+			    shlib);
+			if (!xbps_array_add_cstring_nocopy(ctx->missing, msg))
 				return xbps_error_oom();
 		}
 	}
@@ -214,6 +243,7 @@ check_shlibs(struct shlib_ctx *ctx, xbps_array_t pkgs)
 		xbps_array_t array;
 		xbps_dictionary_t pkgd;
 		const char *pkgname = NULL;
+		bool is32bit;
 
 		pkgname = xbps_dictionary_keysym_cstring_nocopy(obj);
 		/* ignore internal objs */
@@ -225,23 +255,24 @@ check_shlibs(struct shlib_ctx *ctx, xbps_array_t pkgs)
 		if (xbps_dictionary_get(ctx->seen, pkgname))
 			continue;
 
+		is32bit = endswith(pkgname, "-32bit", sizeof("-32bit") - 1);
+
 		array = xbps_dictionary_get(pkgd, "shlib-requires");
 		if (!array)
 			continue;
 		for (unsigned int i = 0; i < xbps_array_count(array); i++) {
 			const char *pkgver = NULL;
 			const char *shlib = NULL;
-			char *missing;
 			if (!xbps_array_get_cstring_nocopy(array, i, &shlib))
 				return -EINVAL;
-			if (shlib_entry_find(ctx->entries, shlib))
+			if (shlib_entry_find(!is32bit ? ctx->entries : ctx->entries_32bit, shlib))
 				continue;
 			if (!xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver))
 				return -EINVAL;
-			missing = xbps_xasprintf(
+			snprintf(msg, sizeof(msg),
 			    "%s: broken, unresolvable shlib `%s'", pkgver,
 			    shlib);
-			if (!xbps_array_add_cstring_nocopy(ctx->missing, missing))
+			if (!xbps_array_add_cstring_nocopy(ctx->missing, msg))
 				return xbps_error_oom();
 		}
 	}
@@ -274,6 +305,10 @@ xbps_transaction_check_shlibs(struct xbps_handle *xhp, xbps_array_t pkgs)
 err:
 	HASH_ITER(hh, ctx.entries, entry, tmp) {
 		HASH_DEL(ctx.entries, entry);
+		free(entry);
+	}
+	HASH_ITER(hh, ctx.entries_32bit, entry, tmp) {
+		HASH_DEL(ctx.entries_32bit, entry);
 		free(entry);
 	}
 	if (ctx.seen)
