@@ -64,7 +64,7 @@ pkgdict_init(void)
 	ATF_REQUIRE(d != NULL);
 
 	a = provides_init();
-	ATF_REQUIRE_EQ(xbps_dictionary_set(d, "provides", a), true);
+	ATF_REQUIRE_EQ(xbps_dictionary_set_and_rel(d, "provides", a), true);
 
 	return d;
 }
@@ -83,6 +83,7 @@ ATF_TC_BODY(match_virtual_pkg_dict_test, tc)
 	ATF_REQUIRE_EQ(xbps_match_virtual_pkg_in_dict(d, "cron-daemon"), true);
 	ATF_REQUIRE_EQ(xbps_match_virtual_pkg_in_dict(d, "cron-daemon>=0"), true);
 	ATF_REQUIRE_EQ(xbps_match_virtual_pkg_in_dict(d, "cron-daemon>2"), false);
+	xbps_object_release(d);
 }
 
 ATF_TC(match_any_virtualpkg_rundeps_test);
@@ -100,6 +101,9 @@ ATF_TC_BODY(match_any_virtualpkg_rundeps_test, tc)
 
 	ATF_REQUIRE_EQ(
 		xbps_match_any_virtualpkg_in_rundeps(rundeps, provides), true);
+
+	xbps_object_release(provides);
+	xbps_object_release(rundeps);
 }
 
 ATF_TP_ADD_TCS(tp)
