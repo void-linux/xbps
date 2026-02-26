@@ -467,6 +467,8 @@ out:
 		free(buf);
 	}
 	xbps_object_release(binpkg_filesd);
+	if (pkg_filesd)
+		xbps_object_release(pkg_filesd);
 
 	return rv;
 }
