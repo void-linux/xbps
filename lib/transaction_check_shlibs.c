@@ -198,8 +198,11 @@ check_shlibs(struct shlib_ctx *ctx, xbps_array_t pkgs)
 			missing = xbps_xasprintf(
 			    "%s: broken, unresolvable shlib `%s'",
 			    pkgver, shlib);
-			if (!xbps_array_add_cstring_nocopy(ctx->missing, missing))
+			if (!xbps_array_add_cstring(ctx->missing, missing)) {
+				free(missing);
 				return xbps_error_oom();
+			}
+			free(missing);
 		}
 	}
 
@@ -238,8 +241,11 @@ check_shlibs(struct shlib_ctx *ctx, xbps_array_t pkgs)
 			missing = xbps_xasprintf(
 			    "%s: broken, unresolvable shlib `%s'", pkgver,
 			    shlib);
-			if (!xbps_array_add_cstring_nocopy(ctx->missing, missing))
+			if (!xbps_array_add_cstring(ctx->missing, missing)) {
+				free(missing);
 				return xbps_error_oom();
+			}
+			free(missing);
 		}
 	}
 
