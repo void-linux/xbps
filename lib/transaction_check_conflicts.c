@@ -23,7 +23,6 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
@@ -55,9 +54,9 @@ pkg_conflicts_trans(struct xbps_handle *xhp, xbps_array_t array,
 
 	trans_cflicts = xbps_dictionary_get(xhp->transd, "conflicts");
 	if (!xbps_dictionary_get_cstring_nocopy(pkg_repod, "pkgver", &repopkgver))
-		abort();
+		xbps_unreachable();
 	if (!xbps_dictionary_get_cstring_nocopy(pkg_repod, "pkgname", &repopkgname))
-		abort();
+		xbps_unreachable();
 
 	for (unsigned int i = 0; i < xbps_array_count(pkg_cflicts); i++) {
 		const char *pkgver = NULL, *pkgname = NULL, *cfpkg = NULL;
@@ -101,8 +100,13 @@ pkg_conflicts_trans(struct xbps_handle *xhp, xbps_array_t array,
 			buf = xbps_xasprintf("CONFLICT: %s with "
 			    "installed pkg %s (matched by %s)",
 			    repopkgver, pkgver, cfpkg);
-			if (!xbps_array_add_cstring(trans_cflicts, buf))
+			if (!buf)
 				return xbps_error_oom();
+			if (!xbps_array_add_cstring(trans_cflicts, buf)) {
+				free(buf);
+				return xbps_error_oom();
+			}
+			free(buf);
 			continue;
 		}
 		/*
@@ -129,8 +133,11 @@ pkg_conflicts_trans(struct xbps_handle *xhp, xbps_array_t array,
 			   repopkgver, pkgver, cfpkg);
 			if (!buf)
 				return xbps_error_oom();
-			if (!xbps_array_add_cstring_nocopy(trans_cflicts, buf))
+			if (!xbps_array_add_cstring(trans_cflicts, buf)) {
+				free(buf);
 				return xbps_error_oom();
+			}
+			free(buf);
 			continue;
 		}
 	}
@@ -192,8 +199,11 @@ pkgdb_conflicts_cb(struct xbps_handle *xhp, xbps_object_t obj,
 			   repopkgver, pkgver, cfpkg);
 			if (!buf)
 				return xbps_error_oom();
-			if (!xbps_array_add_cstring_nocopy(trans_cflicts, buf))
+			if (!xbps_array_add_cstring(trans_cflicts, buf)) {
+				free(buf);
 				return xbps_error_oom();
+			}
+			free(buf);
 			continue;
 		}
 	}
