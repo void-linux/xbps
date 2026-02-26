@@ -495,8 +495,10 @@ xbps_conf_init(struct xbps_handle *xhp)
 	int r = 0;
 
 	assert(xhp);
+
 	seen = xbps_dictionary_create();
-	assert(seen);
+	if (!seen)
+		return xbps_error_oom();
 
 	if (xhp->confdir[0]) {
 		xbps_dbg_printf("Processing configuration directory: %s\n", xhp->confdir);
