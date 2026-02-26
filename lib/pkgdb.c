@@ -321,7 +321,7 @@ xbps_pkgdb_update(struct xbps_handle *xhp, bool flush, bool update)
 			xhp->pkgdb = xbps_dictionary_create();
 			if (!xhp->pkgdb) {
 				xbps_error_oom();
-				rv = ENOMEM;
+				return errno;
 			}
 		}
 		else
