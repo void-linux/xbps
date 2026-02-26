@@ -251,15 +251,15 @@ show_pkg_info_from_metadir(struct xbps_handle *xhp,
 int
 show_pkg_files_from_metadir(struct xbps_handle *xhp, const char *pkg)
 {
-	xbps_dictionary_t d;
+	xbps_dictionary_t filesd;
 	int rv = 0;
 
-	d = xbps_pkgdb_get_pkg_files(xhp, pkg);
-	if (d == NULL)
+	filesd = xbps_pkgdb_get_pkg_files(xhp, pkg);
+	if (filesd == NULL)
 		return ENOENT;
 
-	rv = show_pkg_files(d);
-
+	rv = show_pkg_files(filesd);
+	xbps_object_release(filesd);
 	return rv;
 }
 
@@ -341,7 +341,7 @@ repo_show_pkg_files(struct xbps_handle *xhp, const char *pkg)
 
 	filesd = xbps_archive_fetch_plist(bfile, "/files.plist");
 	if (filesd == NULL) {
-                if (errno != ENOTSUP && errno != ENOENT) {
+		if (errno != ENOTSUP && errno != ENOENT) {
 			xbps_error_printf("Unexpected error: %s\n", strerror(errno));
 		}
 		return errno;
