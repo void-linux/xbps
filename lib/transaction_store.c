@@ -25,6 +25,7 @@
 
 #include <stdlib.h>
 
+#include "xbps.h"
 #include "xbps_api_impl.h"
 
 static int
@@ -60,7 +61,7 @@ transaction_replace_package(xbps_array_t pkgs, const char *pkgname, const char *
 // XXX: the automatic self replace is weird, there should be a better way
 // than having to add and remove it from the metdata...
 static int
-package_self_replace(xbps_dictionary_t pkgd, const char *pkgname)
+package_set_self_replace(xbps_dictionary_t pkgd, const char *pkgname)
 {
 	char buf[XBPS_NAME_SIZE + sizeof(">=0") - 1];
 	xbps_array_t replaces;
@@ -90,8 +91,40 @@ package_self_replace(xbps_dictionary_t pkgd, const char *pkgname)
 }
 
 int HIDDEN
+transaction_package_set_action(xbps_dictionary_t pkgd, xbps_trans_type_t ttype)
+{
+	uint8_t v;
+	switch (ttype) {
+	case XBPS_TRANS_INSTALL:
+	case XBPS_TRANS_UPDATE:
+	case XBPS_TRANS_CONFIGURE:
+	case XBPS_TRANS_REMOVE:
+	case XBPS_TRANS_REINSTALL:
+	case XBPS_TRANS_HOLD:
+	case XBPS_TRANS_DOWNLOAD:
+		break;
+	case XBPS_TRANS_UNKNOWN:
+		return -EINVAL;
+	}
+	v = ttype;
+	if (!xbps_dictionary_set_uint8(pkgd, "transaction", v))
+		return xbps_error_oom();
+	return 0;
+}
+
+static int
+package_set_auto_install(xbps_dictionary_t pkgd, bool value)
+{
+	if (!value)
+		return 0;
+	if (!xbps_dictionary_set_bool(pkgd, "automatic-install", true))
+		return xbps_error_oom();
+	return 0;
+}
+
+int HIDDEN
 transaction_store(struct xbps_handle *xhp, xbps_dictionary_t pkgrd,
-                  bool autoinst)
+                  bool autoinst, xbps_trans_type_t ttype)
 {
 	xbps_array_t pkgs;
 	xbps_dictionary_t pkgd;
@@ -122,12 +155,17 @@ transaction_store(struct xbps_handle *xhp, xbps_dictionary_t pkgrd,
 		return xbps_error_oom();
 	}
 
-	if (autoinst && !xbps_dictionary_set_bool(pkgd, "automatic-install", true)) {
+	r = transaction_package_set_action(pkgd, ttype);
+	if (r < 0) {
 		xbps_object_release(pkgd);
-		return xbps_error_oom();
+		return r;
 	}
-
-	r = package_self_replace(pkgd, pkgname);
+	r = package_set_auto_install(pkgd, autoinst);
+	if (r < 0) {
+		xbps_object_release(pkgd);
+		return r;
+	}
+	r = package_set_self_replace(pkgd, pkgname);
 	if (r < 0) {
 		xbps_object_release(pkgd);
 		return r;

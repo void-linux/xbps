@@ -340,12 +340,7 @@ repo_deps(struct xbps_handle *xhp,
 			autoinst = pkgd_auto;
 		}
 		if (ttype == XBPS_TRANS_CONFIGURE) {
-			if (!xbps_transaction_pkg_type_set(curpkgd, ttype)) {
-				rv = EINVAL;
-				xbps_error_printf("xbps_transaction_pkg_type_set failed for `%s': %s\n", reqpkg, strerror(rv));
-				break;
-			}
-			r = transaction_store(xhp, curpkgd, autoinst);
+			r = transaction_store(xhp, curpkgd, autoinst, ttype);
 			if (r < 0) {
 				xbps_error_printf("transaction_store failed for `%s': %s\n", reqpkg, strerror(rv));
 				rv = EINVAL;
@@ -477,12 +472,7 @@ repo_deps(struct xbps_handle *xhp,
 		/*
 		 * All deps were processed, store pkg in transaction.
 		 */
-		if (!xbps_transaction_pkg_type_set(repopkgd, ttype)) {
-			rv = EINVAL;
-			xbps_dbg_printf("xbps_transaction_pkg_type_set failed for `%s': %s\n", reqpkg, strerror(rv));
-			break;
-		}
-		r = transaction_store(xhp, repopkgd, autoinst);
+		r = transaction_store(xhp, repopkgd, autoinst, ttype);
 		if (r < 0) {
 			rv = EINVAL;
 			xbps_error_printf("transaction_store failed for `%s': %s\n", reqpkg, strerror(rv));
