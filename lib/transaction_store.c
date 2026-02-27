@@ -27,87 +27,112 @@
 
 #include "xbps_api_impl.h"
 
-bool HIDDEN
-xbps_transaction_store(struct xbps_handle *xhp, xbps_array_t pkgs,
-		xbps_dictionary_t pkgrd, bool autoinst)
+static int
+transaction_replace_package(xbps_array_t pkgs, const char *pkgname, const char *pkgver)
 {
-	bool alloc_replaces = false;
-	xbps_dictionary_t d, pkgd;
+	xbps_dictionary_t pkgd;
+	const char *curpkgver = NULL;
+	int r;
+
+	pkgd = xbps_find_pkg_in_array(pkgs, pkgname, 0);
+	if (!pkgd)
+		return 1;
+
+	/* compare version stored in transaction vs current */
+	if (!xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &curpkgver))
+		xbps_unreachable();
+
+	r = xbps_cmpver(pkgver, curpkgver);
+	if (r == 0)
+		return 0;
+	// XXX: should it be possible to replace with lower version?
+	if (r == -1)
+		return 0;
+
+	if (!xbps_remove_pkg_from_array_by_pkgver(pkgs, curpkgver))
+		xbps_unreachable();
+
+	xbps_dbg_printf("[trans] replaced %s with %s\n", curpkgver, pkgver);
+
+	return 1;
+}
+
+// XXX: the automatic self replace is weird, there should be a better way
+// than having to add and remove it from the metdata...
+static int
+package_self_replace(xbps_dictionary_t pkgd, const char *pkgname)
+{
+	char buf[XBPS_NAME_SIZE + sizeof(">=0") - 1];
 	xbps_array_t replaces;
-	const char *pkgver, *pkgname, *curpkgver, *repo;
-	char *self_replaced;
-	int rv;
+
+	replaces = xbps_dictionary_get(pkgd, "replaces");
+	if (!replaces) {
+		replaces = xbps_array_create();
+		if (!replaces)
+			return xbps_error_oom();
+	} else {
+		xbps_object_retain(replaces);
+	}
+
+	snprintf(buf,sizeof(buf), "%s>=0", pkgname);
+	if (!xbps_array_add_cstring(replaces, buf)) {
+		xbps_object_release(replaces);
+		return xbps_error_oom();
+	}
+
+	if (!xbps_dictionary_set(pkgd, "replaces", replaces)) {
+		xbps_object_release(replaces);
+		return xbps_error_oom();
+	}
+
+	xbps_object_release(replaces);
+	return 0;
+}
+
+int HIDDEN
+xbps_transaction_store(struct xbps_handle *xhp, xbps_array_t pkgs,
+                       xbps_dictionary_t pkgrd, bool autoinst)
+{
+	xbps_dictionary_t pkgd;
+	const char *pkgver = NULL, *pkgname = NULL, *repo = NULL;
+	int r;
 
 	assert(xhp);
 	assert(pkgs);
 	assert(pkgrd);
 
-	if (!xbps_dictionary_get_cstring_nocopy(pkgrd, "pkgver", &pkgver)) {
-		return false;
-	}
-	if (!xbps_dictionary_get_cstring_nocopy(pkgrd, "pkgname", &pkgname)) {
-		return false;
-	}
-	d = xbps_find_pkg_in_array(pkgs, pkgname, 0);
-	if (xbps_object_type(d) == XBPS_TYPE_DICTIONARY) {
-		/* compare version stored in transaction vs current */
-		if (!xbps_dictionary_get_cstring_nocopy(d, "pkgver", &curpkgver)) {
-			return false;
-		}
-		rv = xbps_cmpver(pkgver, curpkgver);
-		if (rv == 0 || rv == -1) {
-			/* same version or stored version greater than current */
-			return true;
-		} else {
-			/*
-			 * Current version is greater than stored,
-			 * replace stored with current.
-			 */
-			if (!xbps_remove_pkg_from_array_by_pkgver(pkgs, curpkgver)) {
-				return false;
-			}
-			xbps_dbg_printf("[trans] replaced %s with %s\n", curpkgver, pkgver);
-		}
+	if (!xbps_dictionary_get_cstring_nocopy(pkgrd, "pkgver", &pkgver))
+		xbps_unreachable();
+	if (!xbps_dictionary_get_cstring_nocopy(pkgrd, "pkgname", &pkgname))
+		xbps_unreachable();
+
+	r = transaction_replace_package(pkgs, pkgname, pkgver);
+	if (r < 0)
+		return r;
+	if (r == 0)
+		return 0;
+
+	pkgd = xbps_dictionary_copy_mutable(pkgrd);
+	if (!pkgd) {
+		xbps_object_release(pkgd);
+		return xbps_error_oom();
 	}
 
-	if ((pkgd = xbps_dictionary_copy_mutable(pkgrd)) == NULL)
-		return false;
-
-	/*
-	 * Add required objects into package dep's dictionary.
-	 */
-	if (autoinst && !xbps_dictionary_set_bool(pkgd, "automatic-install", true))
-		goto err;
-
-	/*
-	 * Set a replaces to itself, so that virtual packages are always replaced.
-	*/
-	if ((replaces = xbps_dictionary_get(pkgd, "replaces")) == NULL) {
-		replaces = xbps_array_create();
-		if (!replaces) {
-			xbps_error_oom();
-			goto err;
-		}
-		alloc_replaces = true;
+	if (autoinst && !xbps_dictionary_set_bool(pkgd, "automatic-install", true)) {
+		xbps_object_release(pkgd);
+		return xbps_error_oom();
 	}
 
-	self_replaced = xbps_xasprintf("%s>=0", pkgname);
-	xbps_array_add_cstring(replaces, self_replaced);
-	free(self_replaced);
-
-	if (!xbps_dictionary_set(pkgd, "replaces", replaces)) {
-		if (alloc_replaces)
-			xbps_object_release(replaces);
-		goto err;
+	r = package_self_replace(pkgd, pkgname);
+	if (r < 0) {
+		xbps_object_release(pkgd);
+		return r;
 	}
-	if (alloc_replaces)
-		xbps_object_release(replaces);
 
-	/*
-	 * Add the dictionary into the unsorted queue.
-	 */
-	if (!xbps_array_add(pkgs, pkgd))
-		goto err;
+	if (!xbps_array_add(pkgs, pkgd)) {
+		xbps_object_release(pkgd);
+		return xbps_error_oom();
+	}
 
 	xbps_dictionary_get_cstring_nocopy(pkgd, "repository", &repo);
 
@@ -118,8 +143,5 @@ xbps_transaction_store(struct xbps_handle *xhp, xbps_array_t pkgs,
 	    autoinst ? " as automatic install" : "", repo);
 	xbps_object_release(pkgd);
 
-	return true;
-err:
-	xbps_object_release(pkgd);
-	return false;
+	return 0;
 }
