@@ -91,7 +91,9 @@ bool HIDDEN xbps_transaction_check_shlibs(struct xbps_handle *, xbps_array_t);
 bool HIDDEN xbps_transaction_check_replaces(struct xbps_handle *, xbps_array_t);
 int HIDDEN xbps_transaction_check_conflicts(struct xbps_handle *, xbps_array_t);
 int HIDDEN transaction_store(struct xbps_handle *xhp, xbps_dictionary_t pkgrd,
-                             bool autoinstall);
+                             bool autoinstall, xbps_trans_type_t ttype);
+int HIDDEN transaction_package_set_action(xbps_dictionary_t pkgd,
+                                          xbps_trans_type_t ttype);
 int HIDDEN xbps_transaction_init(struct xbps_handle *);
 int HIDDEN xbps_transaction_files(struct xbps_handle *,
 		xbps_object_iterator_t);

@@ -29,6 +29,7 @@
 #include <errno.h>
 #include <fnmatch.h>
 
+#include "xbps.h"
 #include "xbps_api_impl.h"
 
 /**
@@ -224,9 +225,7 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool force)
 	if (ttype == XBPS_TRANS_INSTALL)
 		autoinst = xhp->flags & XBPS_FLAG_INSTALL_AUTO;
 
-	if (!xbps_transaction_pkg_type_set(pkg_repod, ttype))
-		return EINVAL;
-	return transaction_store(xhp, pkg_repod, autoinst);
+	return transaction_store(xhp, pkg_repod, autoinst, ttype);
 }
 
 /*
@@ -502,8 +501,7 @@ xbps_transaction_remove_pkg(struct xbps_handle *xhp,
 			if (!opkgd)
 				xbps_unreachable();
 
-			xbps_transaction_pkg_type_set(opkgd, XBPS_TRANS_REMOVE);
-			r = transaction_store(xhp, opkgd, false);
+			r = transaction_store(xhp, opkgd, false, XBPS_TRANS_REMOVE);
 			if (r < 0) {
 				xbps_object_release(orphans);
 				return r;
@@ -511,9 +509,7 @@ xbps_transaction_remove_pkg(struct xbps_handle *xhp,
 		}
 	}
 
-	// XXX: why do we modify supposedly read only pkgd's
-	xbps_transaction_pkg_type_set(pkgd, XBPS_TRANS_REMOVE);
-	return transaction_store(xhp, pkgd, false);
+	return transaction_store(xhp, pkgd, false, XBPS_TRANS_REMOVE);
 }
 
 int
@@ -541,8 +537,7 @@ xbps_transaction_autoremove_pkgs(struct xbps_handle *xhp)
 		if (!pkgd)
 			xbps_unreachable();
 
-		xbps_transaction_pkg_type_set(pkgd, XBPS_TRANS_REMOVE);
-		r = transaction_store(xhp, pkgd, false);
+		r = transaction_store(xhp, pkgd, false, XBPS_TRANS_REMOVE);
 		if (r < 0) {
 			return r;
 		}
@@ -564,31 +559,4 @@ xbps_transaction_pkg_type(xbps_dictionary_t pkg_repod)
 		return 0;
 
 	return r;
-}
-
-bool
-xbps_transaction_pkg_type_set(xbps_dictionary_t pkg_repod, xbps_trans_type_t ttype)
-{
-	uint8_t r;
-
-	if (xbps_object_type(pkg_repod) != XBPS_TYPE_DICTIONARY)
-		return false;
-
-	switch (ttype) {
-	case XBPS_TRANS_INSTALL:
-	case XBPS_TRANS_UPDATE:
-	case XBPS_TRANS_CONFIGURE:
-	case XBPS_TRANS_REMOVE:
-	case XBPS_TRANS_REINSTALL:
-	case XBPS_TRANS_HOLD:
-	case XBPS_TRANS_DOWNLOAD:
-		break;
-	default:
-		return false;
-	}
-	r = ttype;
-	if (!xbps_dictionary_set_uint8(pkg_repod, "transaction", r))
-		return false;
-
-	return true;
 }

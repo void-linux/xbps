@@ -53,6 +53,7 @@ xbps_transaction_check_replaces(struct xbps_handle *xhp, xbps_array_t pkgs)
 		xbps_dictionary_t instd, reppkgd;
 		const char *pkgver = NULL;
 		char pkgname[XBPS_NAME_SIZE] = {0};
+		int r;
 
 		obj = xbps_array_get(pkgs, i);
 		replaces = xbps_dictionary_get(obj, "replaces");
@@ -136,7 +137,8 @@ xbps_transaction_check_replaces(struct xbps_handle *xhp, xbps_array_t pkgs)
 					xbps_object_iterator_release(iter);
 					return false;
 				}
-				if (!xbps_transaction_pkg_type_set(reppkgd, XBPS_TRANS_REMOVE)) {
+				r = transaction_package_set_action(reppkgd, XBPS_TRANS_REMOVE);
+				if (r < 0) {
 					xbps_object_iterator_release(iter);
 					return false;
 				}
@@ -165,7 +167,8 @@ xbps_transaction_check_replaces(struct xbps_handle *xhp, xbps_array_t pkgs)
 			 * Add package dictionary into the transaction and mark
 			 * it as to be "removed".
 			 */
-			if (!xbps_transaction_pkg_type_set(instd, XBPS_TRANS_REMOVE)) {
+			r = transaction_package_set_action(instd, XBPS_TRANS_REMOVE);
+			if (r < 0) {
 				xbps_object_iterator_release(iter);
 				return false;
 			}
