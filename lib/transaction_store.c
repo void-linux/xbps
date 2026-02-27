@@ -90,20 +90,24 @@ package_self_replace(xbps_dictionary_t pkgd, const char *pkgname)
 }
 
 int HIDDEN
-xbps_transaction_store(struct xbps_handle *xhp, xbps_array_t pkgs,
-                       xbps_dictionary_t pkgrd, bool autoinst)
+transaction_store(struct xbps_handle *xhp, xbps_dictionary_t pkgrd,
+                  bool autoinst)
 {
+	xbps_array_t pkgs;
 	xbps_dictionary_t pkgd;
 	const char *pkgver = NULL, *pkgname = NULL, *repo = NULL;
 	int r;
 
 	assert(xhp);
-	assert(pkgs);
 	assert(pkgrd);
 
 	if (!xbps_dictionary_get_cstring_nocopy(pkgrd, "pkgver", &pkgver))
 		xbps_unreachable();
 	if (!xbps_dictionary_get_cstring_nocopy(pkgrd, "pkgname", &pkgname))
+		xbps_unreachable();
+
+	pkgs = xbps_dictionary_get(xhp->transd, "packages");
+	if (!pkgs)
 		xbps_unreachable();
 
 	r = transaction_replace_package(pkgs, pkgname, pkgver);
