@@ -20,21 +20,17 @@ replace_dups_body() {
 	mkdir -p pkg_A/usr/bin pkg_B/usr/bin
 	echo "A-1.0_1" > pkg_A/usr/bin/foo
 	echo "B-1.0_1" > pkg_B/usr/bin/foo
+
 	cd some_repo
-	xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
-	atf_check_equal $? 0
-	xbps-create -A noarch -n B-1.0_1 -s "B pkg" --replaces "A>=0 A>=0" ../pkg_B
-	atf_check_equal $? 0
-	xbps-rindex -d -a $PWD/*.xbps
-	atf_check_equal $? 0
+	atf_check -o ignore -- xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
+	atf_check -o ignore -- xbps-create -A noarch -n B-1.0_1 -s "B pkg" --replaces "A>=0 A>=0" ../pkg_B
+	atf_check -o ignore -e ignore -- xbps-rindex -a $PWD/*.xbps
 	cd ..
-	xbps-install -C xbps.d -r root --repository=$PWD/some_repo -yd A
-	atf_check_equal $? 0
-	xbps-install -C xbps.d -r root --repository=$PWD/some_repo -yd B
-	atf_check_equal $? 0
-	result=$(xbps-query -C xbps.d -r root -l|wc -l)
-	atf_check_equal $result 1
-	atf_check_equal $(xbps-query -C xbps.d -r root -p state B) installed
+
+	atf_check -o ignore -e match:"replaces" -- xbps-install -r root --repository=$PWD/some_repo -yd A
+	atf_check -o ignore -e match:"installed package \`A-1\.0_1' will be replaced by \`B-1\.0_1', matched with \`A>=0'" -- xbps-install -r root --repository=$PWD/some_repo -yd B
+	atf_check -o inline:"ii B-1.0_1 B pkg\n" -- xbps-query -r root -l
+	atf_check -o inline:"installed\n" -- xbps-query -r root -p state B
 }
 
 atf_test_case replace_ntimes
@@ -89,16 +85,23 @@ self_replace_body() {
 	cd some_repo
 	atf_check -o ignore -- xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
 	atf_check -o ignore -- xbps-create -A noarch -n B-1.0_1 -s "B pkg" --replaces "A>=0" --provides="A-1.0_1" ../pkg_B
-	atf_check -o ignore -- xbps-rindex -a $PWD/*.xbps
+	atf_check -o ignore -- xbps-rindex -a *.xbps
 	cd ..
-	atf_check -o ignore -e ignore -- xbps-install -C xbps.d -r root --repository=$PWD/some_repo -yd A
-	atf_check -o ignore -e ignore -- xbps-install -C xbps.d -r root --repository=$PWD/some_repo -yd B
-	atf_check -e ignore \
-		-o match:'A-1\.0_1: installed successfully.' \
-		-o match:'B-1\.0_1: removed successfully.' \
-		-- xbps-install -C xbps.d -r root --repository=$PWD/some_repo -yd A
-	atf_check -o inline:"A-1.0_1\n" -- xbps-query -C xbps.d -r root -p pkgver A
-	atf_check -o inline:"installed\n" -- xbps-query -C xbps.d -r root -p state A
+	atf_check \
+		-o match:'A-1\.0_1: installed successfully\.' \
+		-e ignore \
+		-- xbps-install -r root -R some_repo -yd A
+	atf_check \
+		-o ignore \
+		-e match:"installed package \`A-1\.0_1' will be replaced by \`B-1\.0_1', matched with \`A>=0'" \
+		-- xbps-install -r root -R some_repo -yd B
+	atf_check \
+		-o match:'A-1\.0_1: installed successfully\.' \
+		-o match:'B-1\.0_1: removed successfully\.' \
+		-e match:"installed package \`B-1\.0_1' will be replaced by \`A-1\.0_1', matched with \`A>=0'" \
+		-- xbps-install -r root -R some_repo -yd A
+	atf_check -o inline:"A-1.0_1\n" -- xbps-query -r root -p pkgver A
+	atf_check -o inline:"installed\n" -- xbps-query -r root -p state A
 }
 
 atf_test_case replace_vpkg
@@ -241,31 +244,23 @@ replace_vpkg_with_update_head() {
 }
 
 replace_vpkg_with_update_body() {
-	mkdir some_repo root
-	mkdir -p pkg_A/usr/bin pkg_B/usr/bin
-	echo "A-1.0_1" > pkg_A/usr/bin/foo
-	echo "B-1.0_1" > pkg_B/usr/bin/foo
-	cd some_repo
-	xbps-create -A noarch -n A-1.0_1 -s "A pkg" --replaces "awk>=0" --provides="awk-0_1" ../pkg_A
-	atf_check_equal $? 0
-	xbps-create -A noarch -n B-1.0_1 -s "B pkg" --replaces "awk>=0" --provides="awk-0_1" ../pkg_B
-	atf_check_equal $? 0
-	xbps-rindex -d -a $PWD/*.xbps
-	atf_check_equal $? 0
+	mkdir -p repo pkg
+	cd repo
+	atf_check -o ignore -- xbps-create -A noarch -n A-1.0_1 -s "A pkg" --replaces "awk>=0" --provides="awk-0_1" ../pkg
+	atf_check -o ignore -- xbps-create -A noarch -n B-1.0_1 -s "B pkg" --replaces "awk>=0" --provides="awk-0_1" ../pkg
+	atf_check -o ignore -e ignore -- xbps-rindex -a *.xbps
 	cd ..
-	xbps-install -C xbps.d -r root --repository=$PWD/some_repo -yd A
-	atf_check_equal $? 0
-	cd some_repo
-	xbps-create -A noarch -n A-1.1_1 -s "A pkg" --replaces "awk>=0" --provides "awk-0_1" ../pkg_A
-	atf_check_equal $? 0
-	xbps-rindex -d -a $PWD/*.xbps
-	atf_check_equal $? 0
+
+	atf_check -o ignore -e ignore -- xbps-install -r root -R repo -yd A
+
+	cd repo
+	atf_check -o ignore -e ignore -- xbps-create -A noarch -n A-1.1_1 -s "A pkg" --replaces "awk>=0" --provides "awk-0_1" ../pkg
+	atf_check -o ignore -e ignore -- xbps-rindex -a *.xbps
 	cd ..
-	xbps-install -C xbps.d -r root --repository=$PWD/some_repo -yfd A B
-	atf_check_equal $? 0
-	result=$(xbps-query -C xbps.d -r root -l|wc -l)
-	atf_check_equal $result 1
-	atf_check_equal $(xbps-query -C xbps.d -r root -p state B) installed
+
+	atf_check -o ignore -e match:"package \`A-1\.1_1' in transaction will be replaced by \`B-1\.0_1', matched with \`awk>=0'" -- xbps-install -r root -R repo -yfd A B
+	atf_check -o inline:"ii B-1.0_1 B pkg\n" -- xbps-query -r root -l
+	atf_check -o inline:"installed\n" -- xbps-query -r root -p state B
 }
 
 atf_test_case replace_transitional_pkg
