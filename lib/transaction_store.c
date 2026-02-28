@@ -1,5 +1,6 @@
 /*-
  * Copyright (c) 2014-2020 Juan Romero Pardines.
+ * Copyright (c) 2026 Duncan Overbruck <mail@duncano.de>.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -124,7 +125,7 @@ package_set_auto_install(xbps_dictionary_t pkgd, bool value)
 
 int HIDDEN
 transaction_store(struct xbps_handle *xhp, xbps_dictionary_t pkgrd,
-                  bool autoinst, xbps_trans_type_t ttype)
+    xbps_trans_type_t ttype, bool autoinst, bool replace)
 {
 	xbps_array_t pkgs;
 	xbps_dictionary_t pkgd;
@@ -169,6 +170,13 @@ transaction_store(struct xbps_handle *xhp, xbps_dictionary_t pkgrd,
 	if (r < 0) {
 		xbps_object_release(pkgd);
 		return r;
+	}
+
+	if (replace) {
+		if (!xbps_dictionary_set_bool(pkgd, "replaced", true)) {
+			xbps_object_release(pkgd);
+			return r;
+		}
 	}
 
 	if (!xbps_array_add(pkgs, pkgd)) {

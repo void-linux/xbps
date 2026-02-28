@@ -225,7 +225,7 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool force)
 	if (ttype == XBPS_TRANS_INSTALL)
 		autoinst = xhp->flags & XBPS_FLAG_INSTALL_AUTO;
 
-	return transaction_store(xhp, pkg_repod, autoinst, ttype);
+	return transaction_store(xhp, pkg_repod, ttype, autoinst, false);
 }
 
 /*
@@ -501,7 +501,7 @@ xbps_transaction_remove_pkg(struct xbps_handle *xhp,
 			if (!opkgd)
 				xbps_unreachable();
 
-			r = transaction_store(xhp, opkgd, false, XBPS_TRANS_REMOVE);
+			r = transaction_store(xhp, opkgd, XBPS_TRANS_REMOVE, false, false);
 			if (r < 0) {
 				xbps_object_release(orphans);
 				return r;
@@ -509,7 +509,7 @@ xbps_transaction_remove_pkg(struct xbps_handle *xhp,
 		}
 	}
 
-	return transaction_store(xhp, pkgd, false, XBPS_TRANS_REMOVE);
+	return transaction_store(xhp, pkgd, XBPS_TRANS_REMOVE, false, false);
 }
 
 int
@@ -537,7 +537,7 @@ xbps_transaction_autoremove_pkgs(struct xbps_handle *xhp)
 		if (!pkgd)
 			xbps_unreachable();
 
-		r = transaction_store(xhp, pkgd, false, XBPS_TRANS_REMOVE);
+		r = transaction_store(xhp, pkgd, XBPS_TRANS_REMOVE, false, false);
 		if (r < 0) {
 			return r;
 		}
