@@ -148,6 +148,7 @@ repo_deps(struct xbps_handle *xhp,
 	while ((obj = xbps_object_iterator_next(iter))) {
 		bool error = false, foundvpkg = false;
 		bool autoinst = true;
+		int r;
 
 		ttype = XBPS_TRANS_UNKNOWN;
 		reqpkg = xbps_string_cstring_nocopy(obj);
@@ -340,14 +341,10 @@ repo_deps(struct xbps_handle *xhp,
 			autoinst = pkgd_auto;
 		}
 		if (ttype == XBPS_TRANS_CONFIGURE) {
-			if (!xbps_transaction_pkg_type_set(curpkgd, ttype)) {
+			r = transaction_store(xhp, curpkgd, ttype, autoinst, false);
+			if (r < 0) {
+				xbps_error_printf("transaction_store failed for `%s': %s\n", reqpkg, strerror(rv));
 				rv = EINVAL;
-				xbps_dbg_printf("xbps_transaction_pkg_type_set failed for `%s': %s\n", reqpkg, strerror(rv));
-				break;
-			}
-			if (!xbps_transaction_store(xhp, pkgs, curpkgd, autoinst)) {
-				rv = EINVAL;
-				xbps_dbg_printf("xbps_transaction_store failed for `%s': %s\n", reqpkg, strerror(rv));
 				break;
 			}
 			continue;
@@ -477,14 +474,10 @@ repo_deps(struct xbps_handle *xhp,
 		/*
 		 * All deps were processed, store pkg in transaction.
 		 */
-		if (!xbps_transaction_pkg_type_set(repopkgd, ttype)) {
+		r = transaction_store(xhp, repopkgd, ttype, autoinst, false);
+		if (r < 0) {
 			rv = EINVAL;
-			xbps_dbg_printf("xbps_transaction_pkg_type_set failed for `%s': %s\n", reqpkg, strerror(rv));
-			break;
-		}
-		if (!xbps_transaction_store(xhp, pkgs, repopkgd, autoinst)) {
-			rv = EINVAL;
-			xbps_dbg_printf("xbps_transaction_store failed for `%s': %s\n", reqpkg, strerror(rv));
+			xbps_error_printf("transaction_store failed for `%s': %s\n", reqpkg, strerror(rv));
 			break;
 		}
 	}

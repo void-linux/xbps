@@ -22,7 +22,6 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
@@ -91,7 +90,7 @@ collect_shlib_array(struct shlib_ctx *ctx, xbps_array_t array)
 		struct shlib_entry *entry;
 		const char *shlib = NULL;
 		if (!xbps_array_get_cstring_nocopy(array, i, &shlib))
-			return -EINVAL;
+			xbps_unreachable();
 		entry = shlib_entry_get(ctx, shlib);
 		if (!entry)
 			return -errno;
@@ -122,10 +121,8 @@ collect_shlibs(struct shlib_ctx *ctx, xbps_array_t pkgs)
 
 		if (xbps_transaction_pkg_type(pkgd) == XBPS_TRANS_HOLD)
 			continue;
-		if (!xbps_dictionary_get_cstring_nocopy(pkgd, "pkgname", &pkgname)) {
-			xbps_error_printf("invalid package: missing `pkgname` property\n");
-			return -EINVAL;
-		}
+		if (!xbps_dictionary_get_cstring_nocopy(pkgd, "pkgname", &pkgname))
+			xbps_unreachable();
 		if (!xbps_dictionary_set(ctx->seen, pkgname, placeholder))
 			return xbps_error_oom();
 
@@ -193,16 +190,19 @@ check_shlibs(struct shlib_ctx *ctx, xbps_array_t pkgs)
 			const char *shlib = NULL;
 			char *missing;
 			if (!xbps_array_get_cstring_nocopy(array, j, &shlib))
-				return -EINVAL;
+				xbps_unreachable();
 			if (shlib_entry_find(ctx->entries, shlib))
 				continue;
 			if (!xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver))
-				return -EINVAL;
+				xbps_unreachable();
 			missing = xbps_xasprintf(
 			    "%s: broken, unresolvable shlib `%s'",
 			    pkgver, shlib);
-			if (!xbps_array_add_cstring_nocopy(ctx->missing, missing))
+			if (!xbps_array_add_cstring(ctx->missing, missing)) {
+				free(missing);
 				return xbps_error_oom();
+			}
+			free(missing);
 		}
 	}
 
@@ -233,16 +233,19 @@ check_shlibs(struct shlib_ctx *ctx, xbps_array_t pkgs)
 			const char *shlib = NULL;
 			char *missing;
 			if (!xbps_array_get_cstring_nocopy(array, i, &shlib))
-				return -EINVAL;
+				xbps_unreachable();
 			if (shlib_entry_find(ctx->entries, shlib))
 				continue;
 			if (!xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver))
-				return -EINVAL;
+				xbps_unreachable();
 			missing = xbps_xasprintf(
 			    "%s: broken, unresolvable shlib `%s'", pkgver,
 			    shlib);
-			if (!xbps_array_add_cstring_nocopy(ctx->missing, missing))
+			if (!xbps_array_add_cstring(ctx->missing, missing)) {
+				free(missing);
 				return xbps_error_oom();
+			}
+			free(missing);
 		}
 	}
 

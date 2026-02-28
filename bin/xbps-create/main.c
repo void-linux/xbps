@@ -236,18 +236,19 @@ process_one_alternative(const char *altgrname, const char *val)
 	xbps_dictionary_t d;
 	xbps_array_t a;
 	const char *altfiles;
-	bool alloc = false;
+	bool alloc_dict = false, alloc_array = false;
 
 	if ((d = xbps_dictionary_get(pkg_propsd, "alternatives")) == NULL) {
 		d = xbps_dictionary_create();
 		if (d == NULL)
 			die("xbps_dictionary_create");
-		alloc = true;
+		alloc_dict = true;
 	}
 	if ((a = xbps_dictionary_get(d, altgrname)) == NULL) {
 		a = xbps_array_create();
 		if (a == NULL)
 			die("xbps_array_create");
+		alloc_array = true;
 	}
 	altfiles = strchr(val, ':') + 1;
 	assert(altfiles);
@@ -256,10 +257,10 @@ process_one_alternative(const char *altgrname, const char *val)
 	xbps_dictionary_set(d, altgrname, a);
 	xbps_dictionary_set(pkg_propsd, "alternatives", d);
 
-	if (alloc) {
+	if (alloc_array)
 		xbps_object_release(a);
+	if (alloc_dict)
 		xbps_object_release(d);
-	}
 }
 
 
@@ -835,14 +836,13 @@ process_archive(struct archive *ar,
 	/* Add all package data files and release resources */
 	while ((xe = TAILQ_FIRST(&xentry_list)) != NULL) {
 		TAILQ_REMOVE(&xentry_list, xe, entries);
-		if (xe->type == ENTRY_TYPE_METADATA || xe->type == ENTRY_TYPE_DIRS)
-			continue;
-
-		if (!quiet) {
-			printf("%s: adding `%s' ...\n", pkgver, xe->file);
-			fflush(stdout);
+		if (xe->type != ENTRY_TYPE_METADATA && xe->type != ENTRY_TYPE_DIRS) {
+			if (!quiet) {
+				printf("%s: adding `%s' ...\n", pkgver, xe->file);
+				fflush(stdout);
+			}
+			process_entry_file(ar, resolver, xe, NULL);
 		}
-		process_entry_file(ar, resolver, xe, NULL);
 		free(xe->file);
 		free(xe->target);
 		free(xe);

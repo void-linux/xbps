@@ -1,5 +1,6 @@
 /*-
  * Copyright (c) 2014 Enno Boland.
+ * Copyright (c) 2026 Duncan Overbruck <mail@duncano.de>.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -23,10 +24,27 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *-
  */
-#include <atf-c.h>
-#include <xbps.h>
-#include <stdlib.h>
 #include <limits.h>
+#include <stdarg.h>
+#include <stdlib.h>
+
+#include <atf-c.h>
+#include <atf-c/macros.h>
+
+#include <xbps.h>
+
+static ssize_t PRINTF_LIKE(3, 0)
+xsnprintf(char *dst, size_t dstsz, const char *fmt, ...)
+{
+	int l;
+	va_list ap;
+	va_start(ap, fmt);
+	l = vsnprintf(dst, dstsz, fmt, ap);
+	va_end(ap);
+	if (l < 0 || (size_t)l >= dstsz)
+		return -ENOBUFS;
+	return l;
+}
 
 ATF_TC(config_include_test);
 ATF_TC_HEAD(config_include_test, tc)
@@ -36,47 +54,39 @@ ATF_TC_HEAD(config_include_test, tc)
 
 ATF_TC_BODY(config_include_test, tc)
 {
-	struct xbps_handle xh;
+	char pwd[PATH_MAX];
+	char buf1[PATH_MAX];
+	char buf2[PATH_MAX];
+	struct xbps_handle xh = {0};
 	const char *tcsdir;
-	char *buf, *buf2, pwd[PATH_MAX];
-	int ret;
 
-	/* get test source dir */
 	tcsdir = atf_tc_get_config_var(tc, "srcdir");
 
-	memset(&xh, 0, sizeof(xh));
-	buf = getcwd(pwd, sizeof(pwd));
+	ATF_REQUIRE(getcwd(pwd, sizeof(pwd)));
 
 	xbps_strlcpy(xh.rootdir, pwd, sizeof(xh.rootdir));
 	xbps_strlcpy(xh.metadir, pwd, sizeof(xh.metadir));
-	ret = snprintf(xh.confdir, sizeof(xh.confdir), "%s/xbps.d", pwd);
-	ATF_REQUIRE_EQ((ret >= 0), 1);
-	ATF_REQUIRE_EQ(((size_t)ret < sizeof(xh.confdir)), 1);
+	ATF_REQUIRE(xsnprintf(xh.confdir, sizeof(xh.confdir), "%s/xbps.d", pwd) >= 0);
 
 	ATF_REQUIRE_EQ(xbps_mkpath(xh.confdir, 0755), 0);
 
-	buf = xbps_xasprintf("%s/xbps.cf", tcsdir);
-	buf2 = xbps_xasprintf("%s/xbps.d/xbps.conf", pwd);
-	ATF_REQUIRE_EQ(symlink(buf, buf2), 0);
-	free(buf);
-	free(buf2);
+	ATF_REQUIRE(xsnprintf(buf1, sizeof(buf1), "%s/xbps.cf", tcsdir) >= 0);
+	ATF_REQUIRE(xsnprintf(buf2, sizeof(buf2), "%s/xbps.d/xbps.conf", pwd) >= 0);
+	ATF_REQUIRE_EQ(symlink(buf1, buf2), 0);
 
-	buf = xbps_xasprintf("%s/1.include.cf", tcsdir);
-	buf2 = xbps_xasprintf("%s/xbps.d/1.include.conf", pwd);
-	ATF_REQUIRE_EQ(symlink(buf, buf2), 0);
-	free(buf);
-	free(buf2);
+	ATF_REQUIRE(xsnprintf(buf1, sizeof(buf1), "%s/1.include.cf", tcsdir) >= 0);
+	ATF_REQUIRE(xsnprintf(buf2, sizeof(buf2), "%s/xbps.d/1.include.conf", pwd) >= 0);
+	ATF_REQUIRE_EQ(symlink(buf1, buf2), 0);
 
-	buf = xbps_xasprintf("%s/2.include.cf", tcsdir);
-	buf2 = xbps_xasprintf("%s/xbps.d/2.include.conf", pwd);
-	ATF_REQUIRE_EQ(symlink(buf, buf2), 0);
-	free(buf);
-	free(buf2);
+	ATF_REQUIRE(xsnprintf(buf1, sizeof(buf1), "%s/2.include.cf", tcsdir) >= 0);
+	ATF_REQUIRE(xsnprintf(buf2, sizeof(buf2), "%s/xbps.d/2.include.conf", pwd) >= 0);
+	ATF_REQUIRE_EQ(symlink(buf1, buf2), 0);
 
 	xh.flags = XBPS_FLAG_DEBUG;
 	ATF_REQUIRE_EQ(xbps_init(&xh), 0);
 	/* should contain both repositories defined in [12].include.conf */
 	ATF_REQUIRE_EQ(xbps_array_count(xh.repositories), 2);
+	xbps_end(&xh);
 }
 
 
@@ -91,7 +101,6 @@ ATF_TC_BODY(config_include_nomatch_test, tc)
 	struct xbps_handle xh;
 	const char *tcsdir;
 	char *buf, *buf2, pwd[PATH_MAX];
-	int ret;
 
 	/* get test source dir */
 	tcsdir = atf_tc_get_config_var(tc, "srcdir");
@@ -101,9 +110,7 @@ ATF_TC_BODY(config_include_nomatch_test, tc)
 
 	xbps_strlcpy(xh.rootdir, tcsdir, sizeof(xh.rootdir));
 	xbps_strlcpy(xh.metadir, tcsdir, sizeof(xh.metadir));
-	ret = snprintf(xh.confdir, sizeof(xh.confdir), "%s/xbps.d", pwd);
-	ATF_REQUIRE_EQ((ret >= 0), 1);
-	ATF_REQUIRE_EQ(((size_t)ret < sizeof(xh.confdir)), 1);
+	ATF_REQUIRE(xsnprintf(xh.confdir, sizeof(xh.confdir), "%s/xbps.d", pwd) >= 0);
 
 	ATF_REQUIRE_EQ(xbps_mkpath(xh.confdir, 0755), 0);
 
@@ -118,6 +125,7 @@ ATF_TC_BODY(config_include_nomatch_test, tc)
 
 	/* should contain no repositories */
 	ATF_REQUIRE_EQ(xbps_array_count(xh.repositories), 0);
+	xbps_end(&xh);
 }
 
 ATF_TC(config_include_absolute);
@@ -128,44 +136,38 @@ ATF_TC_HEAD(config_include_absolute, tc)
 
 ATF_TC_BODY(config_include_absolute, tc)
 {
-	struct xbps_handle xh;
+	char buf1[PATH_MAX];
+	char buf2[PATH_MAX];
+	char pwd[PATH_MAX];
+	struct xbps_handle xh = {0};
 	const char *tcsdir;
-	char *cfg, *buf, *buf2, pwd[PATH_MAX];
-	int ret;
 
-	/* get test source dir */
 	tcsdir = atf_tc_get_config_var(tc, "srcdir");
 
-	memset(&xh, 0, sizeof(xh));
-	buf = getcwd(pwd, sizeof(pwd));
+	ATF_REQUIRE(getcwd(pwd, sizeof(pwd)));
 
 	xbps_strlcpy(xh.rootdir, pwd, sizeof(xh.rootdir));
 	xbps_strlcpy(xh.metadir, pwd, sizeof(xh.metadir));
-	ret = snprintf(xh.confdir, sizeof(xh.confdir), "%s/xbps.d", pwd);
-	ATF_REQUIRE_EQ((ret >= 0), 1);
-	ATF_REQUIRE_EQ(((size_t)ret < sizeof(xh.confdir)), 1);
+	ATF_REQUIRE(xsnprintf(xh.confdir, sizeof(xh.confdir), "%s/xbps.d", pwd) >= 0);
 
 	ATF_REQUIRE_EQ(xbps_mkpath(xh.confdir, 0755), 0);
 
-	cfg = xbps_xasprintf("%s/xbps2.d", pwd);
-	ATF_REQUIRE_EQ(xbps_mkpath(cfg, 0755), 0);
+	ATF_REQUIRE(xsnprintf(buf1, sizeof(buf1), "%s/xbps2.d", pwd) >= 0);
+	ATF_REQUIRE_EQ(xbps_mkpath(buf1, 0755), 0);
 
-	buf = xbps_xasprintf("%s/xbps_absolute.cf", tcsdir);
-	buf2 = xbps_xasprintf("%s/xbps.d/xbps.conf", pwd);
-	ATF_REQUIRE_EQ(symlink(buf, buf2), 0);
-	free(buf);
-	free(buf2);
+	ATF_REQUIRE(xsnprintf(buf1, sizeof(buf1), "%s/xbps_absolute.cf", tcsdir) >= 0);
+	ATF_REQUIRE(xsnprintf(buf2, sizeof(buf2), "%s/xbps.d/xbps.conf", pwd) >= 0);
+	ATF_REQUIRE_EQ(symlink(buf1, buf2), 0);
 
-	buf = xbps_xasprintf("%s/1.include.cf", tcsdir);
-	buf2 = xbps_xasprintf("%s/xbps2.d/1.include.conf", pwd);
-	ATF_REQUIRE_EQ(symlink(buf, buf2), 0);
-	free(buf);
-	free(buf2);
+	ATF_REQUIRE(xsnprintf(buf1, sizeof(buf1), "%s/1.include.cf", tcsdir) >= 0);
+	ATF_REQUIRE(xsnprintf(buf2, sizeof(buf2), "%s/xbps2.d/1.include.conf", pwd) >= 0);
+	ATF_REQUIRE_EQ(symlink(buf1, buf2), 0);
 
 	xh.flags = XBPS_FLAG_DEBUG;
 	ATF_REQUIRE_EQ(xbps_init(&xh), 0);
 	/* should contain one repository defined in 1.include.conf */
 	ATF_REQUIRE_EQ(xbps_array_count(xh.repositories), 1);
+	xbps_end(&xh);
 }
 
 ATF_TC(config_include_absolute_glob);
@@ -176,50 +178,42 @@ ATF_TC_HEAD(config_include_absolute_glob, tc)
 
 ATF_TC_BODY(config_include_absolute_glob, tc)
 {
-	struct xbps_handle xh;
+	char pwd[PATH_MAX];
+	char buf1[PATH_MAX];
+	char buf2[PATH_MAX];
+	struct xbps_handle xh = {0};
 	const char *tcsdir;
-	char *cfg, *buf, *buf2, pwd[PATH_MAX];
-	int ret;
 
-	/* get test source dir */
 	tcsdir = atf_tc_get_config_var(tc, "srcdir");
 
-	memset(&xh, 0, sizeof(xh));
-	buf = getcwd(pwd, sizeof(pwd));
+	ATF_REQUIRE(getcwd(pwd, sizeof(pwd)));
 
 	xbps_strlcpy(xh.rootdir, pwd, sizeof(xh.rootdir));
 	xbps_strlcpy(xh.metadir, pwd, sizeof(xh.metadir));
-	ret = snprintf(xh.confdir, sizeof(xh.confdir), "%s/xbps.d", pwd);
-	ATF_REQUIRE_EQ((ret >= 0), 1);
-	ATF_REQUIRE_EQ(((size_t)ret < sizeof(xh.confdir)), 1);
+	ATF_REQUIRE(xsnprintf(xh.confdir, sizeof(xh.confdir), "%s/xbps.d", pwd) >= 0);
 
 	ATF_REQUIRE_EQ(xbps_mkpath(xh.confdir, 0755), 0);
 
-	cfg = xbps_xasprintf("%s/xbps2.d", pwd);
-	ATF_REQUIRE_EQ(xbps_mkpath(cfg, 0755), 0);
+	ATF_REQUIRE(xsnprintf(buf1, sizeof(buf1), "%s/xbps2.d", pwd) >= 0);
+	ATF_REQUIRE_EQ(xbps_mkpath(buf1, 0755), 0);
 
-	buf = xbps_xasprintf("%s/xbps_absolute_glob.cf", tcsdir);
-	buf2 = xbps_xasprintf("%s/xbps.d/xbps.conf", pwd);
-	ATF_REQUIRE_EQ(symlink(buf, buf2), 0);
-	free(buf);
-	free(buf2);
+	ATF_REQUIRE(xsnprintf(buf1, sizeof(buf1), "%s/xbps_absolute_glob.cf", tcsdir) >= 0);
+	ATF_REQUIRE(xsnprintf(buf2, sizeof(buf2), "%s/xbps.d/xbps.conf", pwd) >= 0);
+	ATF_REQUIRE_EQ(symlink(buf1, buf2), 0);
 
-	buf = xbps_xasprintf("%s/1.include.cf", tcsdir);
-	buf2 = xbps_xasprintf("%s/xbps2.d/1.include.conf", pwd);
-	ATF_REQUIRE_EQ(symlink(buf, buf2), 0);
-	free(buf);
-	free(buf2);
+	ATF_REQUIRE(xsnprintf(buf1, sizeof(buf1), "%s/1.include.cf", tcsdir) >= 0);
+	ATF_REQUIRE(xsnprintf(buf2, sizeof(buf2), "%s/xbps2.d/1.include.conf", pwd) >= 0);
+	ATF_REQUIRE_EQ(symlink(buf1, buf2), 0);
 
-	buf = xbps_xasprintf("%s/2.include.cf", tcsdir);
-	buf2 = xbps_xasprintf("%s/xbps2.d/2.include.conf", pwd);
-	ATF_REQUIRE_EQ(symlink(buf, buf2), 0);
-	free(buf);
-	free(buf2);
+	ATF_REQUIRE(xsnprintf(buf1, sizeof(buf1), "%s/2.include.cf", tcsdir) >= 0);
+	ATF_REQUIRE(xsnprintf(buf2, sizeof(buf2), "%s/xbps2.d/2.include.conf", pwd) >= 0);
+	ATF_REQUIRE_EQ(symlink(buf1, buf2), 0);
 
 	xh.flags = XBPS_FLAG_DEBUG;
 	ATF_REQUIRE_EQ(xbps_init(&xh), 0);
 	/* should contain both repositories defined in [12].include.conf */
 	ATF_REQUIRE_EQ(xbps_array_count(xh.repositories), 2);
+	xbps_end(&xh);
 }
 
 ATF_TC(config_masking);
@@ -230,40 +224,31 @@ ATF_TC_HEAD(config_masking, tc)
 
 ATF_TC_BODY(config_masking, tc)
 {
-	struct xbps_handle xh;
+	char pwd[PATH_MAX];
+	char buf1[PATH_MAX];
+	char buf2[PATH_MAX];
+	struct xbps_handle xh = {0};
 	const char *tcsdir, *repo;
-	char *buf, *buf2, pwd[PATH_MAX];
-	int ret;
 
-	/* get test source dir */
 	tcsdir = atf_tc_get_config_var(tc, "srcdir");
 
-	memset(&xh, 0, sizeof(xh));
-	buf = getcwd(pwd, sizeof(pwd));
+	ATF_REQUIRE(getcwd(pwd, sizeof(pwd)));
 
 	xbps_strlcpy(xh.rootdir, tcsdir, sizeof(xh.rootdir));
 	xbps_strlcpy(xh.metadir, tcsdir, sizeof(xh.metadir));
-	ret = snprintf(xh.confdir, sizeof(xh.confdir), "%s/xbps.d", pwd);
-	ATF_REQUIRE_EQ((ret >= 0), 1);
-	ATF_REQUIRE_EQ(((size_t)ret < sizeof(xh.confdir)), 1);
-	ret = snprintf(xh.sysconfdir, sizeof(xh.sysconfdir), "%s/sys-xbps.d", pwd);
-	ATF_REQUIRE_EQ((ret >= 0), 1);
-	ATF_REQUIRE_EQ(((size_t)ret < sizeof(xh.sysconfdir)), 1);
+	ATF_REQUIRE(xsnprintf(xh.confdir, sizeof(xh.confdir), "%s/xbps.d", pwd) >= 0);
+	ATF_REQUIRE(xsnprintf(xh.sysconfdir, sizeof(xh.sysconfdir), "%s/sys-xbps.d", pwd) >= 0);
 
 	ATF_REQUIRE_EQ(xbps_mkpath(xh.confdir, 0755), 0);
 	ATF_REQUIRE_EQ(xbps_mkpath(xh.sysconfdir, 0755), 0);
 
-	buf = xbps_xasprintf("%s/1.include.cf", tcsdir);
-	buf2 = xbps_xasprintf("%s/xbps.d/repo.conf", pwd);
-	ATF_REQUIRE_EQ(symlink(buf, buf2), 0);
-	free(buf);
-	free(buf2);
+	ATF_REQUIRE(xsnprintf(buf1, sizeof(buf1), "%s/1.include.cf", tcsdir) >= 0);
+	ATF_REQUIRE(xsnprintf(buf2, sizeof(buf2), "%s/xbps.d/repo.conf", pwd) >= 0);
+	ATF_REQUIRE_EQ(symlink(buf1, buf2), 0);
 
-	buf = xbps_xasprintf("%s/2.include.cf", tcsdir);
-	buf2 = xbps_xasprintf("%s/sys-xbps.d/repo.conf", pwd);
-	ATF_REQUIRE_EQ(symlink(buf, buf2), 0);
-	free(buf);
-	free(buf2);
+	ATF_REQUIRE(xsnprintf(buf1, sizeof(buf1), "%s/2.include.cf", tcsdir) >= 0);
+	ATF_REQUIRE(xsnprintf(buf2, sizeof(buf2), "%s/sys-xbps.d/repo.conf", pwd) >= 0);
+	ATF_REQUIRE_EQ(symlink(buf1, buf2), 0);
 
 	xh.flags = XBPS_FLAG_DEBUG;
 	ATF_REQUIRE_EQ(xbps_init(&xh), 0);
@@ -274,6 +259,7 @@ ATF_TC_BODY(config_masking, tc)
 	/* should contain repository=1 */
 	ATF_REQUIRE_EQ(xbps_array_get_cstring_nocopy(xh.repositories, 0, &repo), true);
 	ATF_REQUIRE_STREQ(repo, "1");
+	xbps_end(&xh);
 }
 
 ATF_TC(config_trim_values);
@@ -284,34 +270,27 @@ ATF_TC_HEAD(config_trim_values, tc)
 
 ATF_TC_BODY(config_trim_values, tc)
 {
-	struct xbps_handle xh;
+	char pwd[PATH_MAX];
+	char buf1[PATH_MAX];
+	char buf2[PATH_MAX];
+	struct xbps_handle xh = {0};
 	const char *tcsdir, *repo;
-	char *buf, *buf2, pwd[PATH_MAX];
-	int ret;
 
-	/* get test source dir */
 	tcsdir = atf_tc_get_config_var(tc, "srcdir");
 
-	memset(&xh, 0, sizeof(xh));
-	buf = getcwd(pwd, sizeof(pwd));
+	ATF_REQUIRE(getcwd(pwd, sizeof(pwd)));
 
 	xbps_strlcpy(xh.rootdir, tcsdir, sizeof(xh.rootdir));
 	xbps_strlcpy(xh.metadir, tcsdir, sizeof(xh.metadir));
-	ret = snprintf(xh.confdir, sizeof(xh.confdir), "%s/xbps.d", pwd);
-	ATF_REQUIRE_EQ((ret >= 0), 1);
-	ATF_REQUIRE_EQ(((size_t)ret < sizeof(xh.confdir)), 1);
-	ret = snprintf(xh.sysconfdir, sizeof(xh.sysconfdir), "%s/sys-xbps.d", pwd);
-	ATF_REQUIRE_EQ((ret >= 0), 1);
-	ATF_REQUIRE_EQ(((size_t)ret < sizeof(xh.sysconfdir)), 1);
+	ATF_REQUIRE(xsnprintf(xh.confdir, sizeof(xh.confdir), "%s/xbps.d", pwd) >= 0);
+	ATF_REQUIRE(xsnprintf(xh.sysconfdir, sizeof(xh.sysconfdir), "%s/sys-xbps.d", pwd) >= 0);
 
 	ATF_REQUIRE_EQ(xbps_mkpath(xh.confdir, 0755), 0);
 	ATF_REQUIRE_EQ(xbps_mkpath(xh.sysconfdir, 0755), 0);
 
-	buf = xbps_xasprintf("%s/trim.cf", tcsdir);
-	buf2 = xbps_xasprintf("%s/xbps.d/1.conf", pwd);
-	ATF_REQUIRE_EQ(symlink(buf, buf2), 0);
-	free(buf);
-	free(buf2);
+	ATF_REQUIRE(xsnprintf(buf1, sizeof(buf1), "%s/trim.cf", tcsdir) >= 0);
+	ATF_REQUIRE(xsnprintf(buf2, sizeof(buf2), "%s/xbps.d/1.conf", pwd) >= 0);
+	ATF_REQUIRE_EQ(symlink(buf1, buf2), 0);
 
 	xh.flags = XBPS_FLAG_DEBUG;
 	ATF_REQUIRE_EQ(xbps_init(&xh), 0);
@@ -327,6 +306,7 @@ ATF_TC_BODY(config_trim_values, tc)
 	ATF_REQUIRE_STREQ(repo, "2");
 	ATF_REQUIRE_EQ(xbps_array_get_cstring_nocopy(xh.repositories, 2, &repo), true);
 	ATF_REQUIRE_STREQ(repo, "3");
+	xbps_end(&xh);
 }
 
 ATF_TC(config_no_trailing_newline);
@@ -337,34 +317,27 @@ ATF_TC_HEAD(config_no_trailing_newline, tc)
 
 ATF_TC_BODY(config_no_trailing_newline, tc)
 {
-	struct xbps_handle xh;
+	char pwd[PATH_MAX];
+	char buf1[PATH_MAX];
+	char buf2[PATH_MAX];
+	struct xbps_handle xh = {0};
 	const char *tcsdir, *repo;
-	char *buf, *buf2, pwd[PATH_MAX];
-	int ret;
 
-	/* get test source dir */
 	tcsdir = atf_tc_get_config_var(tc, "srcdir");
 
-	memset(&xh, 0, sizeof(xh));
-	buf = getcwd(pwd, sizeof(pwd));
+	ATF_REQUIRE(getcwd(pwd, sizeof(pwd)));
 
 	xbps_strlcpy(xh.rootdir, tcsdir, sizeof(xh.rootdir));
 	xbps_strlcpy(xh.metadir, tcsdir, sizeof(xh.metadir));
-	ret = snprintf(xh.confdir, sizeof(xh.confdir), "%s/xbps.d", pwd);
-	ATF_REQUIRE_EQ((ret >= 0), 1);
-	ATF_REQUIRE_EQ(((size_t)ret < sizeof(xh.confdir)), 1);
-	ret = snprintf(xh.sysconfdir, sizeof(xh.sysconfdir), "%s/sys-xbps.d", pwd);
-	ATF_REQUIRE_EQ((ret >= 0), 1);
-	ATF_REQUIRE_EQ(((size_t)ret < sizeof(xh.sysconfdir)), 1);
+	ATF_REQUIRE(xsnprintf(xh.confdir, sizeof(xh.confdir), "%s/xbps.d", pwd) >= 0);
+	ATF_REQUIRE(xsnprintf(xh.sysconfdir, sizeof(xh.sysconfdir), "%s/sys-xbps.d", pwd) >= 0);
 
 	ATF_REQUIRE_EQ(xbps_mkpath(xh.confdir, 0755), 0);
 	ATF_REQUIRE_EQ(xbps_mkpath(xh.sysconfdir, 0755), 0);
 
-	buf = xbps_xasprintf("%s/no-trailing-nl.cf", tcsdir);
-	buf2 = xbps_xasprintf("%s/xbps.d/1.conf", pwd);
-	ATF_REQUIRE_EQ(symlink(buf, buf2), 0);
-	free(buf);
-	free(buf2);
+	ATF_REQUIRE(xsnprintf(buf1, sizeof(buf1), "%s/no-trailing-nl.cf", tcsdir) >= 0);
+	ATF_REQUIRE(xsnprintf(buf2, sizeof(buf2), "%s/xbps.d/1.conf", pwd) >= 0);
+	ATF_REQUIRE_EQ(symlink(buf1, buf2), 0);
 
 	xh.flags = XBPS_FLAG_DEBUG;
 	ATF_REQUIRE_EQ(xbps_init(&xh), 0);
@@ -375,6 +348,7 @@ ATF_TC_BODY(config_no_trailing_newline, tc)
 	/* should contain repository=test */
 	ATF_REQUIRE_EQ(xbps_array_get_cstring_nocopy(xh.repositories, 0, &repo), true);
 	ATF_REQUIRE_STREQ(repo, "test");
+	xbps_end(&xh);
 }
 
 ATF_TP_ADD_TCS(tp)
