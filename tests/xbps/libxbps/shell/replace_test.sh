@@ -56,7 +56,7 @@ replace_ntimes_body() {
 	cd ..
 
 	atf_check -o ignore -e ignore -- \
-		xbps-install -C xbps.d -r root --repository=$PWD/some_repo -yd A B C D
+		xbps-install -r root --repository=$PWD/some_repo -yd A B C D
 
 	cd some_repo
 	atf_check -o ignore -- xbps-create -A noarch -n A-1.1_1 -s "A pkg" ../pkg_A
@@ -72,7 +72,7 @@ replace_ntimes_body() {
 		-o match:"C-1.1_1 update" \
 		-o match:"D-1.1_1 update" \
 		-e ignore \
-		-- xbps-install -C xbps.d -r root --repository=$PWD/some_repo -dvyun
+		-- xbps-install -r root --repository=$PWD/some_repo -dvyun
 }
 
 atf_test_case self_replace
@@ -115,16 +115,16 @@ replace_vpkg_body() {
 	atf_check_equal $? 0
 	xbps-create -A noarch -n catalyst-32bit-1.0_1 -s "catalyst 32bit pkg" \
 		--provides "libGL-32bit-1.0_1" --replaces "libGL-32bit>=0" \
-		--dependencies "qt-32bit>=0" ../catalyst-32bit
+		-D "qt-32bit>=0" ../catalyst-32bit
 	atf_check_equal $? 0
-	xbps-create -A noarch -n qt-32bit-1.0_1 -s "qt 32bit pkg" --dependencies "libGL-32bit>=0" ../qt-32bit
+	xbps-create -A noarch -n qt-32bit-1.0_1 -s "qt 32bit pkg" -D "libGL-32bit>=0" ../qt-32bit
 	atf_check_equal $? 0
 	xbps-rindex -d -a $PWD/*.xbps
 	atf_check_equal $? 0
 	cd ..
-	xbps-install -C xbps.d -r root --repository=$PWD/some_repo -yd libGL-32bit
+	xbps-install -r root --repository=$PWD/some_repo -yd libGL-32bit
 	atf_check_equal $? 0
-	xbps-install -C xbps.d -r root --repository=$PWD/some_repo -yd catalyst-32bit
+	xbps-install -r root --repository=$PWD/some_repo -yd catalyst-32bit
 	atf_check_equal $? 0
 }
 
@@ -151,9 +151,9 @@ replace_pkg_files_body() {
 	xbps-rindex -d -a $PWD/*.xbps
 	atf_check_equal $? 0
 	cd ..
-	xbps-install -C xbps.d -r root --repository=$PWD/repo -yvd libGL
+	xbps-install -r root --repository=$PWD/repo -yvd libGL
 	atf_check_equal $? 0
-	xbps-install -C xbps.d -r root --repository=$PWD/repo -yvd nvidia
+	xbps-install -r root --repository=$PWD/repo -yvd nvidia
 	atf_check_equal $? 0
 	ls -l root/usr/lib
 	result=$(readlink root/usr/lib/libGL.so)
@@ -187,9 +187,9 @@ replace_pkg_files_unmodified_body() {
 	xbps-rindex -d -a $PWD/*.xbps
 	atf_check_equal $? 0
 	cd ..
-	xbps-install -C xbps.d -r root --repository=$PWD/repo -yvd libGL
+	xbps-install -r root --repository=$PWD/repo -yvd libGL
 	atf_check_equal $? 0
-	xbps-install -C xbps.d -r root --repository=$PWD/repo -yvd nvidia
+	xbps-install -r root --repository=$PWD/repo -yvd nvidia
 	atf_check_equal $? 0
 	ls -l root/usr/lib
 	result=$(readlink root/usr/lib/libGL.so)
@@ -219,7 +219,7 @@ replace_pkg_with_update_body() {
 	xbps-rindex -d -a $PWD/*.xbps
 	atf_check_equal $? 0
 	cd ..
-	xbps-install -C xbps.d -r root --repository=$PWD/some_repo -yd A
+	xbps-install -r root --repository=$PWD/some_repo -yd A
 	atf_check_equal $? 0
 	cd some_repo
 	xbps-create -A noarch -n A-1.1_1 -s "A pkg" ../pkg_A
@@ -227,11 +227,11 @@ replace_pkg_with_update_body() {
 	xbps-rindex -d -a $PWD/*.xbps
 	atf_check_equal $? 0
 	cd ..
-	xbps-install -C xbps.d -r root --repository=$PWD/some_repo -yfd A B
+	xbps-install -r root --repository=$PWD/some_repo -yfd A B
 	atf_check_equal $? 0
-	result=$(xbps-query -C xbps.d -r root -l|wc -l)
+	result=$(xbps-query -r root -l|wc -l)
 	atf_check_equal $result 1
-	atf_check_equal $(xbps-query -C xbps.d -r root -p state B) installed
+	atf_check_equal $(xbps-query -r root -p state B) installed
 }
 
 atf_test_case replace_vpkg_with_update
@@ -275,34 +275,26 @@ replace_transitional_pkg_head() {
 }
 
 replace_transitional_pkg_body() {
-	mkdir some_repo root
-	mkdir -p pkg_A/usr/bin pkg_B/usr/bin empty
-	echo "A-1.0_1" > pkg_A/usr/bin/foo
-	echo "B-1.0_1" > pkg_B/usr/bin/foo
-	cd some_repo
-	xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
-	atf_check_equal $? 0
-	xbps-create -A noarch -n B-1.0_1 -s "B pkg" ../pkg_B
-	atf_check_equal $? 0
-	xbps-rindex -d -a $PWD/*.xbps
-	atf_check_equal $? 0
+	mkdir -p repo pkg
+
+	cd repo
+	atf_check -o ignore -- xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg
+	atf_check -o ignore -- xbps-create -A noarch -n B-1.0_1 -s "B pkg" ../pkg
+	atf_check -o ignore -e ignore -- xbps-rindex  -a *.xbps
 	cd ..
-	xbps-install -C xbps.d -r root --repository=$PWD/some_repo -yd B
-	atf_check_equal $? 0
-	cd some_repo
-	xbps-create -A noarch -n A-1.1_1 -s "A pkg" --replaces "B>=0" --provides "B-1.0_1" ../pkg_A
-	atf_check_equal $? 0
-	xbps-create -A noarch -n B-1.1_1 -s "B pkg - transitional dummy package" --dependencies="A>=0" ../empty
-	atf_check_equal $? 0
-	xbps-rindex -d -a $PWD/*.xbps
-	atf_check_equal $? 0
+
+	atf_check -o ignore -e ignore -- xbps-install -r root -R repo -yd B
+
+	cd repo
+	atf_check -o ignore -- xbps-create -A noarch -n A-1.1_1 -s "A pkg" --replaces "B>=0" --provides "B-1.0_1" ../pkg
+	atf_check -o ignore -- xbps-create -A noarch -n B-1.1_1 -s "B pkg - transitional dummy package" -D "A>=0" ../pkg
+	atf_check -o ignore -e ignore -- xbps-rindex -d -a *.xbps
 	cd ..
-	xbps-install -C xbps.d -r root --repository=$PWD/some_repo -ydu
-	atf_check_equal $? 0
-	result=$(xbps-query -r root -l | wc -l)
-	atf_check_equal $result 1
-	atf_check_equal $(xbps-query -C xbps.d -r root -p state A) installed
-	atf_check_equal $(xbps-query -C xbps.d -r root -p automatic-install A) ""
+
+	atf_check -o ignore -e ignore -- xbps-install -r root -R repo -ydu
+	atf_check -o inline:"ii A-1.1_1 A pkg\n" -- xbps-query -r root -l
+	atf_check -o inline:"installed\n" -- xbps-query -r root -p state A
+	atf_check -o empty -- xbps-query -r root -p automatic-install A
 }
 
 atf_test_case replace_transitional_pkg_automatically_installed
@@ -324,24 +316,24 @@ replace_transitional_pkg_automatically_installed_body() {
 	xbps-rindex -d -a $PWD/*.xbps
 	atf_check_equal $? 0
 	cd ..
-	xbps-install -C xbps.d -r root --repository=$PWD/some_repo -yd --automatic A
+	xbps-install -r root --repository=$PWD/some_repo -yd --automatic A
 	atf_check_equal $? 0
-	xbps-install -C xbps.d -r root --repository=$PWD/some_repo -yd B
+	xbps-install -r root --repository=$PWD/some_repo -yd B
 	atf_check_equal $? 0
 	cd some_repo
 	xbps-create -A noarch -n A-1.1_1 -s "A pkg" --replaces "B>=0" --provides "B-1.0_1" ../pkg_A
 	atf_check_equal $? 0
-	xbps-create -A noarch -n B-1.1_1 -s "B pkg - transitional dummy package" --dependencies="A>=0" ../empty
+	xbps-create -A noarch -n B-1.1_1 -s "B pkg - transitional dummy package" -D "A>=0" ../empty
 	atf_check_equal $? 0
 	xbps-rindex -d -a $PWD/*.xbps
 	atf_check_equal $? 0
 	cd ..
-	xbps-install -C xbps.d -r root --repository=$PWD/some_repo -ydu
+	xbps-install -r root --repository=$PWD/some_repo -ydu
 	atf_check_equal $? 0
 	result=$(xbps-query -r root -l | wc -l)
 	atf_check_equal $result 1
-	atf_check_equal $(xbps-query -C xbps.d -r root -p state A) installed
-	atf_check_equal $(xbps-query -C xbps.d -r root -p automatic-install A) ""
+	atf_check_equal $(xbps-query -r root -p state A) installed
+	atf_check_equal $(xbps-query -r root -p automatic-install A) ""
 }
 
 atf_test_case replace_transitional_pkg_automatically_installed2
@@ -363,22 +355,22 @@ replace_transitional_pkg_automatically_installed2_body() {
 	xbps-rindex -d -a $PWD/*.xbps
 	atf_check_equal $? 0
 	cd ..
-	xbps-install -C xbps.d -r root --repository=$PWD/some_repo -yd --automatic A B
+	xbps-install -r root --repository=$PWD/some_repo -yd --automatic A B
 	atf_check_equal $? 0
 	cd some_repo
 	xbps-create -A noarch -n A-1.1_1 -s "A pkg" --replaces "B>=0" --provides "B-1.0_1" ../pkg_A
 	atf_check_equal $? 0
-	xbps-create -A noarch -n B-1.1_1 -s "B pkg - transitional dummy package" --dependencies="A>=0" ../empty
+	xbps-create -A noarch -n B-1.1_1 -s "B pkg - transitional dummy package" -D "A>=0" ../empty
 	atf_check_equal $? 0
 	xbps-rindex -d -a $PWD/*.xbps
 	atf_check_equal $? 0
 	cd ..
-	xbps-install -C xbps.d -r root --repository=$PWD/some_repo -ydu
+	xbps-install -r root --repository=$PWD/some_repo -ydu
 	atf_check_equal $? 0
 	result=$(xbps-query -r root -l | wc -l)
 	atf_check_equal $result 1
-	atf_check_equal $(xbps-query -C xbps.d -r root -p state A) installed
-	atf_check_equal $(xbps-query -C xbps.d -r root -p automatic-install A) "yes"
+	atf_check_equal $(xbps-query -r root -p state A) installed
+	atf_check_equal $(xbps-query -r root -p automatic-install A) "yes"
 }
 
 atf_test_case replace_transitional_pkg_automatically_installed3
@@ -400,23 +392,23 @@ replace_transitional_pkg_automatically_installed3_body() {
 	xbps-rindex -d -a $PWD/*.xbps
 	atf_check_equal $? 0
 	cd ..
-	xbps-install -C xbps.d -r root --repository=$PWD/some_repo -yd --automatic B
-	xbps-install -C xbps.d -r root --repository=$PWD/some_repo -yd A
+	xbps-install -r root --repository=$PWD/some_repo -yd --automatic B
+	xbps-install -r root --repository=$PWD/some_repo -yd A
 	atf_check_equal $? 0
 	cd some_repo
 	xbps-create -A noarch -n A-1.1_1 -s "A pkg" --replaces "B>=0" --provides "B-1.0_1" ../pkg_A
 	atf_check_equal $? 0
-	xbps-create -A noarch -n B-1.1_1 -s "B pkg - transitional dummy package" --dependencies="A>=0" ../empty
+	xbps-create -A noarch -n B-1.1_1 -s "B pkg - transitional dummy package" -D "A>=0" ../empty
 	atf_check_equal $? 0
 	xbps-rindex -d -a $PWD/*.xbps
 	atf_check_equal $? 0
 	cd ..
-	xbps-install -C xbps.d -r root --repository=$PWD/some_repo -ydu
+	xbps-install -r root --repository=$PWD/some_repo -ydu
 	atf_check_equal $? 0
 	result=$(xbps-query -r root -l | wc -l)
 	atf_check_equal $result 1
-	atf_check_equal $(xbps-query -C xbps.d -r root -p state A) installed
-	atf_check_equal $(xbps-query -C xbps.d -r root -p automatic-install A) ""
+	atf_check_equal $(xbps-query -r root -p state A) installed
+	atf_check_equal $(xbps-query -r root -p automatic-install A) ""
 }
 
 atf_test_case replace_transitional_pkg_during_install
@@ -432,17 +424,17 @@ replace_transitional_pkg_during_install_body() {
 	cd some_repo
 	xbps-create -A noarch -n A-1.0_1 -s "A pkg" --replaces "B>=0" ../pkg_A
 	atf_check_equal $? 0
-	xbps-create -A noarch -n B-1.0_1 -s "A pkg - transitional dummy package" --dependencies="A>=0" ../empty
+	xbps-create -A noarch -n B-1.0_1 -s "A pkg - transitional dummy package" -D "A>=0" ../empty
 	atf_check_equal $? 0
 	xbps-rindex -d -a $PWD/*.xbps
 	atf_check_equal $? 0
 	cd ..
-	xbps-install -C xbps.d -r root --repository=$PWD/some_repo -yd B
+	xbps-install -r root --repository=$PWD/some_repo -yd B
 	atf_check_equal $? 0
 	result=$(xbps-query -r root -l | wc -l)
 	atf_check_equal $result 1
-	atf_check_equal $(xbps-query -C xbps.d -r root -p state A) installed
-	atf_check_equal $(xbps-query -C xbps.d -r root -p state B) ""
+	atf_check_equal $(xbps-query -r root -p state A) installed
+	atf_check_equal $(xbps-query -r root -p state B) ""
 }
 
 atf_test_case replace_automatically_installed_dep
@@ -452,39 +444,29 @@ replace_automatically_installed_dep_head() {
 }
 
 replace_automatically_installed_dep_body() {
-	mkdir some_repo root
-	mkdir -p pkg_A/usr/bin pkg_B/usr/bin pkg_C/usr/bin empty
-	echo "A-1.0_1" > pkg_A/usr/bin/a
-	echo "B-1.0_1" > pkg_B/usr/bin/b
-	echo "C-1.0_1" > pkg_C/usr/bin/c
-	cd some_repo
-	xbps-create -A noarch -n A-1.0_1 -s "A pkg" --dependencies="B>=0 C>=0" ../pkg_A
-	atf_check_equal $? 0
-	xbps-create -A noarch -n B-1.0_1 -s "B pkg" ../pkg_B
-	atf_check_equal $? 0
-	xbps-create -A noarch -n C-1.0_1 -s "C pkg" ../pkg_C
-	atf_check_equal $? 0
-	xbps-rindex -d -a $PWD/*.xbps
-	atf_check_equal $? 0
+	mkdir -p repo pkg
+
+	cd repo
+	atf_check -o ignore -- xbps-create -A noarch -n A-1.0_1 -s "A pkg" -D "B>=0 C>=0" ../pkg
+	atf_check -o ignore -- xbps-create -A noarch -n B-1.0_1 -s "B pkg" ../pkg
+	atf_check -o ignore -- xbps-create -A noarch -n C-1.0_1 -s "C pkg" ../pkg
+	atf_check -o ignore -e ignore -- xbps-rindex -a *.xbps
 	cd ..
-	xbps-install -C xbps.d -r root --repository=$PWD/some_repo -yd A
-	atf_check_equal $? 0
-	cd some_repo
-	xbps-create -A noarch -n A-1.1_1 -s "A pkg" ../pkg_A
-	atf_check_equal $? 0
-	xbps-create -A noarch -n B-1.1_1 -s "B pkg" --replaces "C>=0" --provides "C-1.0_1" ../pkg_B
-	atf_check_equal $? 0
-	xbps-rindex -d -a $PWD/*.xbps
-	atf_check_equal $? 0
+
+	atf_check -o ignore -e ignore -- xbps-install -r root -R repo -yd A
+
+	cd repo
+	atf_check -o ignore -- xbps-create -A noarch -n A-1.1_1 -s "A pkg" ../pkg
+	atf_check -o ignore -- xbps-create -A noarch -n B-1.1_1 -s "B pkg" --replaces "C>=0" --provides "C-1.0_1" ../pkg
+	atf_check -o ignore -e ignore -- xbps-rindex -d -a *.xbps
 	cd ..
-	xbps-install -C xbps.d -r root --repository=$PWD/some_repo -ydu
-	atf_check_equal $? 0
-	result=$(xbps-query -r root -l | wc -l)
-	atf_check_equal $result 2
-	atf_check_equal $(xbps-query -C xbps.d -r root -p state A) installed
-	atf_check_equal $(xbps-query -C xbps.d -r root -p state B) installed
-	atf_check_equal $(xbps-query -C xbps.d -r root -p automatic-install A) ""
-	atf_check_equal $(xbps-query -C xbps.d -r root -p automatic-install B) "yes"
+
+	atf_check -o ignore -e ignore -- xbps-install -r root -R repo -ydu
+	arf_check -o inline: "" -- xbps-query -r root -l | wc -l
+	atf_check -o inline:"installed\n" -- xbps-query -r root -p state A
+	atf_check -o inline:"installed\n" -- xbps-query -r root -p state B
+	atf_check -o inline:"" -- xbps-query -r root -p automatic-install A
+	atf_check -o inline:"yes\n" -- xbps-query -r root -p automatic-install B
 }
 
 atf_test_case replace_automatically_installed_dep3
@@ -500,7 +482,7 @@ replace_automatically_installed_dep3_body() {
 	echo "B-1.0_1" > pkg_B/usr/bin/b
 	echo "C-1.0_1" > pkg_C/usr/bin/c
 	cd some_repo
-	xbps-create -A noarch -n A-1.0_1 -s "A pkg" --dependencies="B>=0 C>=0" ../pkg_A
+	xbps-create -A noarch -n A-1.0_1 -s "A pkg" -D "B>=0 C>=0" ../pkg_A
 	atf_check_equal $? 0
 	xbps-create -A noarch -n B-1.0_1 -s "B pkg" ../pkg_B
 	atf_check_equal $? 0
@@ -509,24 +491,24 @@ replace_automatically_installed_dep3_body() {
 	xbps-rindex -d -a $PWD/*.xbps
 	a2tf_check_equal $? 0
 	cd ..
-	xbps-install -C xbps.d -r root --repository=$PWD/some_repo -yd A C
+	xbps-install -r root --repository=$PWD/some_repo -yd A C
 	atf_check_equal $? 0
 	cd some_repo
-	xbps-create -A noarch -n A-1.1_1 -s "A pkg" --dependencies="B>=0" ../pkg_A
+	xbps-create -A noarch -n A-1.1_1 -s "A pkg" -D "B>=0" ../pkg_A
 	atf_check_equal $? 0
 	xbps-create -A noarch -n B-1.1_1 -s "B pkg" --replaces "C>=0" --provides "C-1.0_1" ../pkg_B
 	atf_check_equal $? 0
 	xbps-rindex -d -a $PWD/*.xbps
 	atf_check_equal $? 0
 	cd ..
-	xbps-install -C xbps.d -r root --repository=$PWD/some_repo -ydu
+	xbps-install -r root --repository=$PWD/some_repo -ydu
 	atf_check_equal $? 0
 	result=$(xbps-query -r root -l | wc -l)
 	atf_check_equal $result 2
-	atf_check_equal $(xbps-query -C xbps.d -r root -p state A) installed
-	atf_check_equal $(xbps-query -C xbps.d -r root -p state B) installed
-	atf_check_equal $(xbps-query -C xbps.d -r root -p automatic-install A) ""
-	atf_check_equal $(xbps-query -C xbps.d -r root -p automatic-install B) ""
+	atf_check_equal $(xbps-query -r root -p state A) installed
+	atf_check_equal $(xbps-query -r root -p state B) installed
+	atf_check_equal $(xbps-query -r root -p automatic-install A) ""
+	atf_check_equal $(xbps-query -r root -p automatic-install B) ""
 }
 
 atf_test_case replace_automatically_installed_dep2
@@ -536,39 +518,30 @@ replace_automatically_installed_dep2_head() {
 }
 
 replace_automatically_installed_dep2_body() {
-	mkdir some_repo root
-	mkdir -p pkg_A/usr/bin pkg_B/usr/bin pkg_C/usr/bin empty
-	echo "A-1.0_1" > pkg_A/usr/bin/a
-	echo "B-1.0_1" > pkg_B/usr/bin/b
-	echo "C-1.0_1" > pkg_C/usr/bin/c
-	cd some_repo
-	xbps-create -A noarch -n A-1.0_1 -s "A pkg" --dependencies="B>=0 C>=0" ../pkg_A
-	atf_check_equal $? 0
-	xbps-create -A noarch -n B-1.0_1 -s "B pkg" ../pkg_B
-	atf_check_equal $? 0
-	xbps-create -A noarch -n C-1.0_1 -s "C pkg" ../pkg_C
-	atf_check_equal $? 0
-	xbps-rindex -d -a $PWD/*.xbps
-	atf_check_equal $? 0
+	mkdir -p pkg repo
+
+	cd repo
+	atf_check -o ignore -- xbps-create -A noarch -n A-1.0_1 -s "A pkg" -D "B>=0 C>=0" ../pkg
+	atf_check -o ignore -- xbps-create -A noarch -n B-1.0_1 -s "B pkg" ../pkg
+	atf_check -o ignore -- xbps-create -A noarch -n C-1.0_1 -s "C pkg" ../pkg
+	atf_check -o ignore -e ignore -- xbps-rindex -a *.xbps
 	cd ..
-	xbps-install -C xbps.d -r root --repository=$PWD/some_repo -yd A C
-	atf_check_equal $? 0
-	cd some_repo
-	xbps-create -A noarch -n A-1.1_1 -s "A pkg" --dependencies="B>=0" ../pkg_A
-	atf_check_equal $? 0
-	xbps-create -A noarch -n B-1.1_1 -s "B pkg" --replaces "C>=0" --provides "C-1.0_1" ../pkg_B
-	atf_check_equal $? 0
-	xbps-rindex -d -a $PWD/*.xbps
-	atf_check_equal $? 0
+
+	atf_check -e ignore -o ignore -- xbps-install -r root -R repo -yd A C
+
+	cd repo
+	atf_check -o ignore -- xbps-create -A noarch -n A-1.1_1 -s "A pkg" -D "B>=0" ../pkg
+	atf_check -o ignore -- xbps-create -A noarch -n B-1.1_1 -s "B pkg" --replaces "C>=0" --provides "C-1.0_1" ../pkg
+	atf_check -o ignore -e ignore -- xbps-rindex -a *.xbps
 	cd ..
-	xbps-install -C xbps.d -r root --repository=$PWD/some_repo -ydu
-	atf_check_equal $? 0
-	result=$(xbps-query -r root -l | wc -l)
-	atf_check_equal $result 2
-	atf_check_equal $(xbps-query -C xbps.d -r root -p state A) installed
-	atf_check_equal $(xbps-query -C xbps.d -r root -p state B) installed
-	atf_check_equal $(xbps-query -C xbps.d -r root -p automatic-install A) ""
-	atf_check_equal $(xbps-query -C xbps.d -r root -p automatic-install B) ""
+
+	atf_check -o ignore -e ignore xbps-install -r root -R repo -ydu
+
+	atf_check -o inline:"ii A-1.1_1 A pkg\nii B-1.1_1 B pkg\n" -- xbps-query -r root -l
+	atf_check -o inline:"installed\n" -- xbps-query -r root -p state A
+	atf_check -o inline:"installed\n" -- xbps-query -r root -p state B
+	atf_check -o empty -- xbps-query -r root -p automatic-install A
+	atf_check -o empty -- xbps-query -r root -p automatic-install B
 }
 
 atf_test_case replace_automatically_installed_dep3
@@ -584,7 +557,7 @@ replace_automatically_installed_dep3_body() {
 	echo "B-1.0_1" > pkg_B/usr/bin/b
 	echo "C-1.0_1" > pkg_C/usr/bin/c
 	cd some_repo
-	xbps-create -A noarch -n A-1.0_1 -s "A pkg" --dependencies="B>=0 C>=0" ../pkg_A
+	xbps-create -A noarch -n A-1.0_1 -s "A pkg" -D "B>=0 C>=0" ../pkg_A
 	atf_check_equal $? 0
 	xbps-create -A noarch -n B-1.0_1 -s "B pkg" ../pkg_B
 	atf_check_equal $? 0
@@ -593,24 +566,24 @@ replace_automatically_installed_dep3_body() {
 	xbps-rindex -d -a $PWD/*.xbps
 	atf_check_equal $? 0
 	cd ..
-	xbps-install -C xbps.d -r root --repository=$PWD/some_repo -yd A
+	xbps-install -r root --repository=$PWD/some_repo -yd A
 	atf_check_equal $? 0
 	cd some_repo
-	xbps-create -A noarch -n A-1.1_1 -s "A pkg" --dependencies="B>=0" ../pkg_A
+	xbps-create -A noarch -n A-1.1_1 -s "A pkg" -D "B>=0" ../pkg_A
 	atf_check_equal $? 0
 	xbps-create -A noarch -n B-1.1_1 -s "B pkg" --replaces "C>=0" --provides "C-1.0_1" ../pkg_B
 	atf_check_equal $? 0
 	xbps-rindex -d -a $PWD/*.xbps
 	atf_check_equal $? 0
 	cd ..
-	xbps-install -C xbps.d -r root --repository=$PWD/some_repo -ydu
+	xbps-install -r root --repository=$PWD/some_repo -ydu
 	atf_check_equal $? 0
 	result=$(xbps-query -r root -l | wc -l)
 	atf_check_equal $result 2
-	atf_check_equal $(xbps-query -C xbps.d -r root -p state A) installed
-	atf_check_equal $(xbps-query -C xbps.d -r root -p state B) installed
-	atf_check_equal $(xbps-query -C xbps.d -r root -p automatic-install A) ""
-	atf_check_equal $(xbps-query -C xbps.d -r root -p automatic-install B) "yes"
+	atf_check_equal $(xbps-query -r root -p state A) installed
+	atf_check_equal $(xbps-query -r root -p state B) installed
+	atf_check_equal $(xbps-query -r root -p automatic-install A) ""
+	atf_check_equal $(xbps-query -r root -p automatic-install B) "yes"
 }
 
 atf_test_case dont_replace_alternative_pkg_during_install
@@ -631,12 +604,12 @@ dont_replace_alternative_pkg_during_install_body() {
 	xbps-rindex -d -a $PWD/*.xbps
 	atf_check_equal $? 0
 	cd ..
-	xbps-install -C xbps.d -r root --repository=$PWD/some_repo -yd B
+	xbps-install -r root --repository=$PWD/some_repo -yd B
 	atf_check_equal $? 0
 	result=$(xbps-query -r root -l | wc -l)
 	atf_check_equal $result 1
-	atf_check_equal $(xbps-query -C xbps.d -r root -p state A) ""
-	atf_check_equal $(xbps-query -C xbps.d -r root -p state B) installed
+	atf_check_equal $(xbps-query -r root -p state A) ""
+	atf_check_equal $(xbps-query -r root -p state B) installed
 }
 
 atf_init_test_cases() {
