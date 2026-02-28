@@ -62,10 +62,6 @@ int HIDDEN dewey_match(const char *, const char *);
 int HIDDEN xbps_pkgdb_init(struct xbps_handle *);
 void HIDDEN xbps_pkgdb_release(struct xbps_handle *);
 int HIDDEN xbps_pkgdb_conversion(struct xbps_handle *);
-int HIDDEN xbps_array_replace_dict_by_name(xbps_array_t, xbps_dictionary_t,
-		const char *);
-int HIDDEN xbps_array_replace_dict_by_pattern(xbps_array_t, xbps_dictionary_t,
-		const char *);
 bool HIDDEN xbps_remove_pkg_from_array_by_name(xbps_array_t, const char *);
 bool HIDDEN xbps_remove_pkg_from_array_by_pattern(xbps_array_t, const char *);
 bool HIDDEN xbps_remove_pkg_from_array_by_pkgver(xbps_array_t, const char *);
