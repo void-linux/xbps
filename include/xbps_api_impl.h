@@ -88,7 +88,8 @@ xbps_dictionary_t HIDDEN xbps_find_virtualpkg_in_array(struct xbps_handle *,
 /* transaction */
 bool HIDDEN xbps_transaction_check_revdeps(struct xbps_handle *, xbps_array_t);
 bool HIDDEN xbps_transaction_check_shlibs(struct xbps_handle *, xbps_array_t);
-bool HIDDEN xbps_transaction_check_replaces(struct xbps_handle *, xbps_array_t);
+int HIDDEN transaction_check_replaces(
+    struct xbps_handle *xhp, xbps_array_t trans_pkgs);
 int HIDDEN xbps_transaction_check_conflicts(struct xbps_handle *, xbps_array_t);
 int HIDDEN transaction_store(struct xbps_handle *xhp, xbps_dictionary_t pkgrd,
     xbps_trans_type_t ttype, bool autoinstall, bool replace);

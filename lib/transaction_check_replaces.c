@@ -23,15 +23,71 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdio.h>
+#include <libgen.h>
 #include <stdbool.h>
 #include <stdlib.h>
-#include <string.h>
-#include <errno.h>
 #include <unistd.h>
-#include <libgen.h>
 
+#include "xbps.h"
+#include "xbps/xbps_dictionary.h"
 #include "xbps_api_impl.h"
+
+static int
+replace_in_transaction(
+    xbps_dictionary_t pkgd, const char *pattern, const char *pkgver)
+{
+	const char *curpkgver = NULL;
+	int r;
+
+	// already being removed
+	if (xbps_transaction_pkg_type(pkgd) == XBPS_TRANS_REMOVE)
+		return 0;
+
+	if (!xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &curpkgver))
+		xbps_unreachable();
+
+	// XXX: ???
+	if (!xbps_match_virtual_pkg_in_dict(pkgd, pattern) &&
+	    !xbps_pkgpattern_match(curpkgver, pattern))
+		return 0;
+
+	if (!xbps_dictionary_set_bool(pkgd, "replaced", true))
+		return xbps_error_oom();
+	r = transaction_package_set_action(pkgd, XBPS_TRANS_REMOVE);
+	if (r < 0)
+		return r;
+
+	xbps_verbose_printf(
+	    "Package `%s' will be replaced by `%s'\n", curpkgver, pkgver);
+	xbps_dbg_printf(
+	    "[replaces] package `%s' in transaction will be replaced by `%s', "
+	    "matched with `%s'\n",
+	    curpkgver, pkgver, pattern);
+	return 0;
+}
+
+static int
+replace_in_pkgdb(struct xbps_handle *xhp, xbps_dictionary_t pkgd,
+    const char *pattern, const char *pkgver)
+{
+	const char *curpkgver = NULL;
+	int r;
+
+	if (!xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &curpkgver))
+		xbps_unreachable();
+
+	r = transaction_store(xhp, pkgd, XBPS_TRANS_REMOVE, false, true);
+	if (r < 0)
+		return r;
+
+	xbps_verbose_printf(
+	    "Installed package `%s' will be replaced by `%s'\n", curpkgver, pkgver);
+	xbps_dbg_printf(
+	    "[replaces] installed package `%s' will be replaced by `%s', "
+	    "matched with `%s'\n",
+	    curpkgver, pkgver, pattern);
+	return 0;
+}
 
 /*
  * Processes the array of pkg dictionaries in "pkgs" to
@@ -40,153 +96,78 @@
  * This array contains the unordered list of packages in
  * the transaction dictionary.
  */
-bool HIDDEN
-xbps_transaction_check_replaces(struct xbps_handle *xhp, xbps_array_t pkgs)
+int HIDDEN
+transaction_check_replaces(struct xbps_handle *xhp, xbps_array_t pkgs)
 {
-	assert(xhp);
-	assert(pkgs);
-
 	for (unsigned int i = 0; i < xbps_array_count(pkgs); i++) {
 		xbps_array_t replaces;
-		xbps_object_t obj;
-		xbps_object_iterator_t iter;
-		xbps_dictionary_t instd, reppkgd;
+		xbps_object_t pkgd;
 		const char *pkgver = NULL;
-		char pkgname[XBPS_NAME_SIZE] = {0};
 		int r;
 
-		obj = xbps_array_get(pkgs, i);
-		replaces = xbps_dictionary_get(obj, "replaces");
-		if (replaces == NULL || xbps_array_count(replaces) == 0)
+		pkgd = xbps_array_get(pkgs, i);
+		if (!pkgd)
+			xbps_unreachable();
+
+		replaces = xbps_dictionary_get(pkgd, "replaces");
+		if (!replaces || xbps_array_count(replaces) == 0)
 			continue;
 
-		if (!xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver)) {
-			return false;
-		}
-		if (!xbps_pkg_name(pkgname, XBPS_NAME_SIZE, pkgver)) {
-			return false;
-		}
-
-		iter = xbps_array_iterator(replaces);
-		assert(iter);
+		if (!xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver))
+			xbps_unreachable();
 
 		for (unsigned int j = 0; j < xbps_array_count(replaces); j++) {
-			const char *curpkgver = NULL, *pattern = NULL;
-			char curpkgname[XBPS_NAME_SIZE] = {0};
-			bool instd_auto = false, hold = false;
-			xbps_trans_type_t ttype;
+			bool autoinst = false;
+			xbps_dictionary_t instd, transd;
+			const char *pattern = NULL;
+			const char *reppkgname = NULL;
+			bool hold = false;
 
 			if(!xbps_array_get_cstring_nocopy(replaces, j, &pattern))
-				abort();
+				xbps_unreachable();
 
-			/*
-			 * Find the installed package that matches the pattern
-			 * to be replaced. Also check if the package would be
-			 * installed in the transaction.
-			 */
-			if (((instd = xbps_pkgdb_get_pkg(xhp, pattern)) == NULL) &&
-			    ((instd = xbps_pkgdb_get_virtualpkg(xhp, pattern)) == NULL) &&
-			    ((instd = xbps_find_pkg_in_array(pkgs, pattern, XBPS_TRANS_INSTALL)) == NULL))
+			// check if the package is installed or going to be installed...
+			if (!(instd = xbps_pkgdb_get_pkg(xhp, pattern)) &&
+			    !(instd = xbps_pkgdb_get_virtualpkg(xhp, pattern)) &&
+			    !(instd = xbps_find_pkg_in_array(pkgs, pattern, XBPS_TRANS_INSTALL)))
 				continue;
 
-			if (!xbps_dictionary_get_cstring_nocopy(instd, "pkgver", &curpkgver)) {
-				xbps_object_iterator_release(iter);
-				return false;
-			}
-			/* ignore pkgs on hold mode */
-			if (xbps_dictionary_get_bool(instd, "hold", &hold) && hold)
+			// don't replace itself
+			if (instd == pkgd)
 				continue;
 
-			if (!xbps_pkg_name(curpkgname, XBPS_NAME_SIZE, curpkgver)) {
-				xbps_object_iterator_release(iter);
-				return false;
-			}
-			/*
-			 * Check that we are not replacing the same package,
-			 * due to virtual packages.
-			 */
-			if (strcmp(pkgname, curpkgname) == 0) {
+			// don't replace packages on hold
+			if (xbps_dictionary_get_bool(pkgd, "hold", &hold) && hold)
 				continue;
-			}
-			/*
-			 * Make sure to not add duplicates.
-			 */
-			xbps_dictionary_get_bool(instd, "automatic-install", &instd_auto);
-			reppkgd = xbps_find_pkg_in_array(pkgs, curpkgname, 0);
-			if (reppkgd) {
-				ttype = xbps_transaction_pkg_type(reppkgd);
-				if (ttype == XBPS_TRANS_REMOVE || ttype == XBPS_TRANS_HOLD)
+
+			// check if the package is already in the transaction
+			if (!xbps_dictionary_get_cstring_nocopy(instd, "pkgname", &reppkgname))
+				xbps_unreachable();
+			transd = xbps_find_pkg_in_array(pkgs, reppkgname, 0);
+
+			if (transd) {
+				if (transd == pkgd)
 					continue;
-				if (!xbps_dictionary_get_cstring_nocopy(reppkgd,
-				    "pkgver", &curpkgver)) {
-					xbps_object_iterator_release(iter);
-					return false;
-				}
-				if (!xbps_match_virtual_pkg_in_dict(reppkgd, pattern) &&
-				    !xbps_pkgpattern_match(curpkgver, pattern))
-					continue;
-				/*
-				 * Package contains replaces="pkgpattern", but the
-				 * package that should be replaced is also in the
-				 * transaction and it's going to be updated.
-				 */
-				if (!instd_auto) {
-					xbps_dictionary_remove(obj, "automatic-install");
-				}
-				if (!xbps_dictionary_set_bool(reppkgd, "replaced", true)) {
-					xbps_object_iterator_release(iter);
-					return false;
-				}
-				r = transaction_package_set_action(reppkgd, XBPS_TRANS_REMOVE);
-				if (r < 0) {
-					xbps_object_iterator_release(iter);
-					return false;
-				}
-				if (xbps_array_replace_dict_by_name(pkgs, reppkgd, curpkgname) != 0) {
-					xbps_object_iterator_release(iter);
-					return false;
-				}
-				xbps_verbose_printf("Package `%s' will be replaced by `%s'\n", curpkgver, pkgver);
-				xbps_dbg_printf(
-				    "Package `%s' in transaction will be "
-				    "replaced by `%s', matched with `%s'\n",
-				    curpkgver, pkgver, pattern);
-				continue;
+				r = replace_in_transaction(
+				    transd, pattern, pkgver);
+				if (r < 0)
+					return r;
+				xbps_dictionary_get_bool(
+				    transd, "automatic-install", &autoinst);
+			} else {
+				r = replace_in_pkgdb(
+				    xhp, instd, pattern, pkgver);
+				if (r < 0)
+					return r;
+				xbps_dictionary_get_bool(
+				    instd, "automatic-install", &autoinst);
 			}
-			/*
-			 * If new package is providing a virtual package to the
-			 * package that we want to replace we should respect
-			 * the automatic-install object.
-			 */
-			if (xbps_match_virtual_pkg_in_dict(obj, pattern)) {
-				if (!instd_auto) {
-					xbps_dictionary_remove(obj, "automatic-install");
-				}
-			}
-			/*
-			 * Add package dictionary into the transaction and mark
-			 * it as to be "removed".
-			 */
-			r = transaction_package_set_action(instd, XBPS_TRANS_REMOVE);
-			if (r < 0) {
-				xbps_object_iterator_release(iter);
-				return false;
-			}
-			if (!xbps_dictionary_set_bool(instd, "replaced", true)) {
-				xbps_object_iterator_release(iter);
-				return false;
-			}
-			if (!xbps_array_add_first(pkgs, instd)) {
-				xbps_object_iterator_release(iter);
-				return false;
-			}
-			xbps_verbose_printf("Package `%s' will be replaced by `%s'\n", curpkgver, pkgver);
-			xbps_dbg_printf(
-			    "Package `%s' will be replaced by `%s', "
-			    "matched with `%s'\n", curpkgver, pkgver, pattern);
+
+			// inherit manually installed
+			if (!autoinst)
+				xbps_dictionary_remove(pkgd, "automatic-install");
 		}
-		xbps_object_iterator_release(iter);
 	}
 
-	return true;
+	return 0;
 }
