@@ -82,33 +82,33 @@ search_prop_head() {
 }
 
 search_prop_body() {
-	mkdir -p root some_repo pkg_A pkg_B pkg_C
+	mkdir -p repo pkg
 
-	cd some_repo
-	atf_check -o ignore -- xbps-create -A noarch -n foo-1.0_1 -s "foo pkg" ../pkg_A
-	atf_check -o ignore -- xbps-create -A noarch -n bar-1.0_1 -s "bar pkg" ../pkg_B
-	atf_check -o ignore -- xbps-create -A noarch -n fizz-1.0_1 -s "fizz pkg" ../pkg_C
+	cd repo
+	atf_check -o ignore -- xbps-create -A noarch -n foo-1.0_1 -s "foo pkg" ../pkg
+	atf_check -o ignore -- xbps-create -A noarch -n bar-1.0_1 -s "bar pkg" ../pkg
+	atf_check -o ignore -- xbps-create -A noarch -n fizz-1.0_1 -s "fizz pkg" ../pkg
 	atf_check -o ignore -- xbps-rindex -a $PWD/*.xbps
 	cd ..
 
-	xbps-query -r root --repository=some_repo -S foo
-	xbps-query -r root --repository=some_repo -S bar
-	xbps-query -r root --repository=some_repo -S fizz
+	atf_check -o ignore -- xbps-query -r root --repository=repo -S foo
+	atf_check -o ignore -- xbps-query -r root --repository=repo -S bar
+	atf_check -o ignore -- xbps-query -r root --repository=repo -S fizz
 
 	# regex error
 	atf_check -e match:"ERROR: failed to compile regexp: \(:" -s exit:1 -- \
-		xbps-query -r root --repository=some_repo --property pkgver --regex -s '('
+		xbps-query -r root --repository=repo  --property pkgver --regex -s '('
 
 	# repo mode
 	atf_check -o match:"^foo-1\.0_1: foo-1\.0_1 \(.*\)$" -- \
-		xbps-query -r root --repository=some_repo --property pkgver -s foo
+		xbps-query -r root --repository=repo  --property pkgver -s foo
 	atf_check \
 		-o match:"^foo-1\.0_1: foo-1\.0_1 \(.*\)$" \
 		-o match:"^fizz-1\.0_1: fizz-1\.0_1 \(.*\)$" \
-		-- xbps-query -r root --repository=some_repo --property pkgver -s f
+		-- xbps-query -r root --repository=repo --property pkgver -s f
 
-	atf_check -o ignore -- \
-		xbps-install -r root --repository=some_repo -y foo
+	atf_check -o match:"foo-1\.0_1: installed successfully\." -- \
+		xbps-install -r root -R repo -y foo
 
 	# installed mode
 	atf_check -o match:"^foo-1\.0_1: foo-1\.0_1$" -- \
