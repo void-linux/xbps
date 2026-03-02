@@ -23,12 +23,11 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdio.h>
-#include <stdbool.h>
-#include <stdlib.h>
-#include <string.h>
-#include <errno.h>
 #include <sys/statvfs.h>
+
+#include <errno.h>
+#include <stdbool.h>
+#include <string.h>
 
 #include "xbps_api_impl.h"
 
@@ -366,11 +365,13 @@ xbps_transaction_prepare(struct xbps_handle *xhp)
 	 * Check for packages to be replaced.
 	 */
 	xbps_dbg_printf("%s: checking replaces\n", __func__);
-	if (!xbps_transaction_check_replaces(xhp, pkgs)) {
+	r = transaction_check_replaces(xhp, pkgs);
+	if (r < 0) {
 		xbps_object_release(xhp->transd);
 		xhp->transd = NULL;
-		return EINVAL;
+		return -r;
 	}
+
 	/*
 	 * Check if there are missing revdeps.
 	 */
