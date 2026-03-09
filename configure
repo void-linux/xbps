@@ -234,10 +234,10 @@ XCC="$CC $CFLAGS $CPPFLAGS $LDFLAGS"
 
 check_compiler_flag()
 {
-	local flag="$1"
-	local mode="$2"
-	local var="$3"
-	local rv=0
+	flag="$1"
+	mode="$2"
+	var="$3"
+	rv=0
 
 	[ -z "$var" ] && var="CFLAGS"
 
