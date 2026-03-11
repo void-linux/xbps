@@ -57,6 +57,7 @@ usage(bool fail)
 	    " -M, --memory-sync           Remote repository data is fetched and stored\n"
 	    "                             in memory, ignoring on-disk repodata archives\n"
 	    " -n, --dry-run               Dry-run mode\n"
+	    " -p, --parallel-download <n> Number of parallel fetch jobs\n"
 	    " -R, --repository <url>      Add repository to the top of the list\n"
 	    "                             This option can be specified multiple times\n"
 	    " -r, --rootdir <dir>         Full path to rootdir\n"
@@ -97,7 +98,7 @@ repo_import_key_cb(struct xbps_repo *repo, void *arg UNUSED, bool *done UNUSED)
 int
 main(int argc, char **argv)
 {
-	const char *shortopts = "AC:c:DdfhIiMnR:r:SuUVvy";
+	const char *shortopts = "AC:c:DdfhIip:MnR:r:SuUVvy";
 	const struct option longopts[] = {
 		{ "automatic", no_argument, NULL, 'A' },
 		{ "config", required_argument, NULL, 'C' },
@@ -110,6 +111,7 @@ main(int argc, char **argv)
 		{ "ignore-file-conflicts", no_argument, NULL, 'I' },
 		{ "memory-sync", no_argument, NULL, 'M' },
 		{ "dry-run", no_argument, NULL, 'n' },
+		{ "parallel-download", required_argument, NULL, 'p' },
 		{ "repository", required_argument, NULL, 'R' },
 		{ "rootdir", required_argument, NULL, 'r' },
 		{ "sync", no_argument, NULL, 'S' },
@@ -134,6 +136,7 @@ main(int argc, char **argv)
 	syncf = yes = force = drun = update = false;
 
 	memset(&xh, 0, sizeof(xh));
+	xh.fetch_jobs = 1;
 
 	while ((c = getopt_long(argc, argv, shortopts, longopts, NULL)) != -1) {
 		switch (c) {
@@ -178,6 +181,11 @@ main(int argc, char **argv)
 			break;
 		case 'n':
 			drun = true;
+			break;
+		case 'p':
+			xh.fetch_jobs = atoi(optarg);
+			if (xh.fetch_jobs <= 0)
+				xh.fetch_jobs = 1;
 			break;
 		case 'R':
 			xbps_repo_store(&xh, optarg);
