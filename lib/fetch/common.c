@@ -1543,8 +1543,10 @@ fetch_read(conn_t *conn, char *buf, size_t len)
 		if (rlen >= 0)
 			break;
 
-		if (errno != EINTR || !fetchRestartCalls)
+		if (errno != EINTR || !fetchRestartCalls) {
+			fetch_syserr();
 			return (-1);
+		}
 	}
 	return (rlen);
 }
