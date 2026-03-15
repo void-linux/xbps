@@ -86,6 +86,7 @@ show_pkg_revdeps(struct xbps_handle *xhp, const char *pkg, bool repomode)
 		xbps_array_get_cstring_nocopy(revdeps, i, &pkgdep);
 		puts(pkgdep);
 	}
-	xbps_object_release(revdeps);
+	if (repomode)
+		xbps_object_release(revdeps);
 	return 0;
 }
