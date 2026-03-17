@@ -192,4 +192,41 @@ xbps_end(struct xbps_handle *xhp)
 	assert(xhp);
 
 	xbps_pkgdb_release(xhp);
+
+	if (xhp->vpkgd) {
+		xbps_object_release(xhp->vpkgd);
+		xhp->vpkgd = NULL;
+	}
+	if (xhp->vpkgd_conf) {
+		xbps_object_release(xhp->vpkgd_conf);
+		xhp->vpkgd_conf = NULL;
+	}
+	if (xhp->pkgdb_revdeps) {
+		xbps_object_release(xhp->pkgdb_revdeps);
+		xhp->pkgdb_revdeps = NULL;
+	}
+	if (xhp->transd) {
+		xbps_object_release(xhp->transd);
+		xhp->transd = NULL;
+	}
+
+	if (xhp->preserved_files) {
+		xbps_object_release(xhp->preserved_files);
+		xhp->preserved_files = NULL;
+	}
+	if (xhp->noextract) {
+		xbps_object_release(xhp->noextract);
+		xhp->noextract = NULL;
+	}
+	if (xhp->ignored_pkgs) {
+		xbps_object_release(xhp->ignored_pkgs);
+		xhp->ignored_pkgs= NULL;
+	}
+	if (xhp->repositories) {
+		xbps_object_release(xhp->repositories);
+		xhp->ignored_pkgs= NULL;
+	}
+
+	free(xhp->pkgdb_plist);
+	xhp->pkgdb_plist = NULL;
 }

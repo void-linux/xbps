@@ -232,6 +232,12 @@ processCompletion(struct item *item)
 				logpath = xbps_xasprintf("%s/deps/%s.txt",
 				    LogDir, xitem->pkgn);
 				fp = fopen(logpath, "a");
+				if (!fp) {
+					xbps_error_printf(
+					    "failed to open file: %s: %s\n",
+					    logpath, strerror(errno));
+					exit(EXIT_FAILURE);
+				}
 				fprintf(fp, "%s\n", item->pkgn);
 				fclose(fp);
 				free(logpath);
@@ -369,7 +375,13 @@ runBuilds(const char *bpath)
 			 */
 			item->xcode = -98;
 			fp = fopen(logpath, "a");
-			xbps_error_printf("xbps-fbulk: unable to fork/exec xbps-src\n");
+			if (!fp) {
+				xbps_error_printf(
+				    "failed to open file: %s: %s\n",
+				    logpath, strerror(errno));
+				exit(EXIT_FAILURE);
+			}
+			fprintf(fp, "xbps-fbulk: unable to fork/exec xbps-src\n");
 			fclose(fp);
 			processCompletion(item);
 		} else {
@@ -426,6 +438,12 @@ addDepn(struct item *item, struct item *xitem)
 			logpath = xbps_xasprintf("%s/deps/%s.txt",
 			    LogDir, item->pkgn);
 			fp = fopen(logpath, "a");
+			if (!fp) {
+				xbps_error_printf(
+				    "failed to open file: %s: %s\n", logpath,
+				    strerror(errno));
+				exit(EXIT_FAILURE);
+			}
 			fprintf(fp, "%s\n", xitem->pkgn);
 			fclose(fp);
 			free(logpath);
@@ -461,6 +479,10 @@ ordered_depends(const char *bpath, const char *pkgn)
 	snprintf(cmd, sizeof(cmd)-1,
 	    "%s/xbps-src show-build-deps %s 2>&1", bpath, pkgn);
 	fp = popen(cmd, "r");
+	if (!fp) {
+		xbps_error_printf("faile to run xbps-src show-build-deps\n");
+		exit(EXIT_FAILURE);
+	}
 	while (fgets(buf, sizeof(buf), fp) != NULL) {
 		char dpath[PATH_MAX];
 		size_t len;

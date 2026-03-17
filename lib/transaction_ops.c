@@ -29,6 +29,7 @@
 #include <errno.h>
 #include <fnmatch.h>
 
+#include "xbps.h"
 #include "xbps_api_impl.h"
 
 /**
@@ -217,12 +218,6 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool force)
 	if (!force && xbps_dictionary_get(pkg_repod, "hold"))
 		ttype = XBPS_TRANS_HOLD;
 
-	/*
-	 * Store pkgd from repo into the transaction.
-	 */
-	if (!xbps_transaction_pkg_type_set(pkg_repod, ttype)) {
-		return EINVAL;
-	}
 
 	/*
 	 * Set automatic-install to true if it was requested and this is a new install.
@@ -230,11 +225,7 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool force)
 	if (ttype == XBPS_TRANS_INSTALL)
 		autoinst = xhp->flags & XBPS_FLAG_INSTALL_AUTO;
 
-	if (!xbps_transaction_store(xhp, pkgs, pkg_repod, autoinst)) {
-		return EINVAL;
-	}
-
-	return 0;
+	return transaction_store(xhp, pkg_repod, ttype, autoinst, false);
 }
 
 /*
@@ -464,96 +455,96 @@ xbps_transaction_remove_pkg(struct xbps_handle *xhp,
 			    bool recursive)
 {
 	xbps_dictionary_t pkgd;
-	xbps_array_t pkgs, orphans, orphans_pkg;
-	xbps_object_t obj;
-	int rv = 0;
+	int r;
 
 	assert(xhp);
 	assert(pkgname);
 
-	if ((pkgd = xbps_pkgdb_get_pkg(xhp, pkgname)) == NULL) {
-		/* pkg not installed */
-		return ENOENT;
-	}
-	/*
-	 * Prepare transaction dictionary and missing deps array.
-	 */
-	if ((rv = xbps_transaction_init(xhp)) != 0)
-		return rv;
+	r = xbps_transaction_init(xhp);
+	if (r < 0)
+		return r;
 
-	pkgs = xbps_dictionary_get(xhp->transd, "packages");
+	pkgd = xbps_pkgdb_get_pkg(xhp, pkgname);
+	if (!pkgd)
+		return -errno;
 
-	if (!recursive)
-		goto rmpkg;
 	/*
 	 * If recursive is set, find out which packages would be orphans
 	 * if the supplied package were already removed.
 	 */
-	if ((orphans_pkg = xbps_array_create()) == NULL)
-		return ENOMEM;
+	// XXX: this is stupid and incomplete if multiple packages
+	// are removed at once, in that case orphans would not be correctly
+	// be identified...
+	if (recursive) {
+		xbps_array_t orphans, orphans_pkg;
 
-	xbps_array_set_cstring_nocopy(orphans_pkg, 0, pkgname);
-	orphans = xbps_find_pkg_orphans(xhp, orphans_pkg);
-	xbps_object_release(orphans_pkg);
-	if (xbps_object_type(orphans) != XBPS_TYPE_ARRAY)
-		return EINVAL;
+		orphans_pkg = xbps_array_create();
+		if (!orphans_pkg)
+			return xbps_error_oom();
 
-	for (unsigned int i = 0; i < xbps_array_count(orphans); i++) {
-		obj = xbps_array_get(orphans, i);
-		xbps_transaction_pkg_type_set(obj, XBPS_TRANS_REMOVE);
-		if (!xbps_transaction_store(xhp, pkgs, obj, false)) {
-			return EINVAL;
+		if (!xbps_array_set_cstring_nocopy(orphans_pkg, 0, pkgname)) {
+			xbps_object_release(orphans_pkg);
+			return xbps_error_oom();
+		}
+
+
+		orphans = xbps_find_pkg_orphans(xhp, orphans_pkg);
+		if (!orphans) {
+			xbps_object_release(orphans_pkg);
+			return -errno;
+		}
+		xbps_object_release(orphans_pkg);
+		for (unsigned int i = 0; i < xbps_array_count(orphans); i++) {
+			xbps_dictionary_t opkgd;
+
+			opkgd = xbps_array_get(orphans, i);
+			if (!opkgd)
+				xbps_unreachable();
+
+			r = transaction_store(xhp, opkgd, XBPS_TRANS_REMOVE, false, false);
+			if (r < 0) {
+				xbps_object_release(orphans);
+				return r;
+			}
 		}
 	}
-	xbps_object_release(orphans);
-	return rv;
 
-rmpkg:
-	/*
-	 * Add pkg dictionary into the transaction pkgs queue.
-	 */
-	xbps_transaction_pkg_type_set(pkgd, XBPS_TRANS_REMOVE);
-	if (!xbps_transaction_store(xhp, pkgs, pkgd, false)) {
-		return EINVAL;
-	}
-	return rv;
+	return transaction_store(xhp, pkgd, XBPS_TRANS_REMOVE, false, false);
 }
 
 int
 xbps_transaction_autoremove_pkgs(struct xbps_handle *xhp)
 {
-	xbps_array_t orphans, pkgs;
-	xbps_object_t obj;
-	int rv = 0;
+	xbps_array_t orphans;
+	int r;
+
+	r = xbps_transaction_init(xhp);
+	if (r < 0)
+		return r;
 
 	orphans = xbps_find_pkg_orphans(xhp, NULL);
+	if (!orphans)
+		return -errno;
 	if (xbps_array_count(orphans) == 0) {
-		/* no orphans? we are done */
-		goto out;
+		xbps_object_release(orphans);
+		return 0;
 	}
-	/*
-	 * Prepare transaction dictionary and missing deps array.
-	 */
-	if ((rv = xbps_transaction_init(xhp)) != 0)
-		goto out;
 
-	pkgs = xbps_dictionary_get(xhp->transd, "packages");
-	/*
-	 * Add pkg orphan dictionary into the transaction pkgs queue.
-	 */
 	for (unsigned int i = 0; i < xbps_array_count(orphans); i++) {
-		obj = xbps_array_get(orphans, i);
-		xbps_transaction_pkg_type_set(obj, XBPS_TRANS_REMOVE);
-		if (!xbps_transaction_store(xhp, pkgs, obj, false)) {
-			rv = EINVAL;
-			goto out;
+		xbps_object_t pkgd;
+
+		pkgd = xbps_array_get(orphans, i);
+		if (!pkgd)
+			xbps_unreachable();
+
+		r = transaction_store(xhp, pkgd, XBPS_TRANS_REMOVE, false, false);
+		if (r < 0) {
+			return r;
 		}
 	}
-out:
-	if (orphans)
-		xbps_object_release(orphans);
 
-	return rv;
+	xbps_object_release(orphans);
+	return 0;
 }
 
 xbps_trans_type_t
@@ -568,31 +559,4 @@ xbps_transaction_pkg_type(xbps_dictionary_t pkg_repod)
 		return 0;
 
 	return r;
-}
-
-bool
-xbps_transaction_pkg_type_set(xbps_dictionary_t pkg_repod, xbps_trans_type_t ttype)
-{
-	uint8_t r;
-
-	if (xbps_object_type(pkg_repod) != XBPS_TYPE_DICTIONARY)
-		return false;
-
-	switch (ttype) {
-	case XBPS_TRANS_INSTALL:
-	case XBPS_TRANS_UPDATE:
-	case XBPS_TRANS_CONFIGURE:
-	case XBPS_TRANS_REMOVE:
-	case XBPS_TRANS_REINSTALL:
-	case XBPS_TRANS_HOLD:
-	case XBPS_TRANS_DOWNLOAD:
-		break;
-	default:
-		return false;
-	}
-	r = ttype;
-	if (!xbps_dictionary_set_uint8(pkg_repod, "transaction", r))
-		return false;
-
-	return true;
 }

@@ -104,9 +104,9 @@ repo_read_next(struct xbps_repo *repo, struct archive *ar, struct archive_entry 
 
 	r = archive_read_next_header(ar, entry);
 	if (r == ARCHIVE_FATAL) {
-		xbps_error_printf("failed to read repository: %s: %s\n",
-		    repo->uri, archive_error_string(ar));
-		return -xbps_archive_errno(ar);
+		return xbps_error_errno(xbps_archive_errno(ar),
+		    "failed to read repository: %s: %s\n", repo->uri,
+		    archive_error_string(ar));
 	} else if (r == ARCHIVE_WARN) {
 		xbps_warn_printf("reading repository: %s: %s\n",
 		    repo->uri, archive_error_string(ar));
@@ -130,18 +130,18 @@ repo_read_index(struct xbps_repo *repo, struct archive *ar)
 
 	/* index.plist */
 	if (strcmp(archive_entry_pathname(entry), XBPS_REPODATA_INDEX) != 0) {
-		xbps_error_printf("failed to read repository index: %s: unexpected archive entry\n",
+		return xbps_error_errno(EINVAL,
+		    "failed to read repository index: %s: unexpected archive "
+		    "entry\n",
 		    repo->uri);
-		r = -EINVAL;
-		return r;
 	}
 
 	if (archive_entry_size(entry) == 0) {
 		r = archive_read_data_skip(ar);
 		if (r == ARCHIVE_FATAL) {
-			xbps_error_printf("failed to read repository: %s: archive error: %s\n",
+			return xbps_error_errno(xbps_archive_errno(ar),
+			    "failed to read repository: %s: archive error: %s\n",
 			    repo->uri, archive_error_string(ar));
-			return -xbps_archive_errno(ar);
 		}
 		repo->index = xbps_dictionary_create();
 		return 0;
@@ -149,11 +149,9 @@ repo_read_index(struct xbps_repo *repo, struct archive *ar)
 
 	buf = xbps_archive_get_file(ar, entry);
 	if (!buf) {
-		r = -errno;
-		xbps_error_printf(
+		return xbps_error_errno(r,
 		    "failed to open repository: %s: failed to read index: %s\n",
-		    repo->uri, strerror(-r));
-		return r;
+		    repo->uri, strerror(errno));
 	}
 	repo->index = xbps_dictionary_internalize(buf);
 	r = -errno;
@@ -161,10 +159,9 @@ repo_read_index(struct xbps_repo *repo, struct archive *ar)
 	if (!repo->index) {
 		if (!r)
 			r = -EINVAL;
-		xbps_error_printf(
+		return xbps_error_errno(r,
 		    "failed to open repository: %s: failed to parse index: %s\n",
 		    repo->uri, strerror(-r));
-		return r;
 	}
 
 	xbps_dictionary_make_immutable(repo->index);
@@ -183,17 +180,17 @@ repo_read_meta(struct xbps_repo *repo, struct archive *ar)
 		return r;
 
 	if (strcmp(archive_entry_pathname(entry), XBPS_REPODATA_META) != 0) {
-		xbps_error_printf("failed to read repository metadata: %s: unexpected archive entry\n",
+		return xbps_error_errno(EINVAL,
+		    "failed to read repository metadata: %s: unexpected "
+		    "archive entry\n",
 		    repo->uri);
-		r = -EINVAL;
-		return r;
 	}
 	if (archive_entry_size(entry) == 0) {
 		r = archive_read_data_skip(ar);
 		if (r == ARCHIVE_FATAL) {
-			xbps_error_printf("failed to read repository: %s: archive error: %s\n",
+			return xbps_error_errno(xbps_archive_errno(ar),
+			    "failed to read repository: %s: archive error: %s\n",
 			    repo->uri, archive_error_string(ar));
-			return -xbps_archive_errno(ar);
 		}
 		repo->idxmeta = NULL;
 		return 0;
@@ -201,12 +198,10 @@ repo_read_meta(struct xbps_repo *repo, struct archive *ar)
 
 	buf = xbps_archive_get_file(ar, entry);
 	if (!buf) {
-		r = -errno;
-		xbps_error_printf(
+		return xbps_error_errno(errno,
 		    "failed to read repository metadata: %s: failed to read "
 		    "metadata: %s\n",
-		    repo->uri, strerror(-r));
-		return r;
+		    repo->uri, strerror(errno));
 	}
 	/* for backwards compatibility check if the content is DEADBEEF. */
 	if (strcmp(buf, "DEADBEEF") == 0) {
@@ -221,11 +216,10 @@ repo_read_meta(struct xbps_repo *repo, struct archive *ar)
 	if (!repo->idxmeta) {
 		if (!r)
 			r = -EINVAL;
-		xbps_error_printf(
+		return xbps_error_errno(r,
 		    "failed to read repository metadata: %s: failed to parse "
 		    "metadata: %s\n",
 		    repo->uri, strerror(-r));
-		return r;
 	}
 
 	repo->is_signed = true;
@@ -250,10 +244,10 @@ repo_read_stage(struct xbps_repo *repo, struct archive *ar)
 	}
 
 	if (strcmp(archive_entry_pathname(entry), XBPS_REPODATA_STAGE) != 0) {
-		xbps_error_printf("failed to read repository stage: %s: unexpected archive entry\n",
+		return xbps_error_errno(EINVAL,
+		    "failed to read repository stage: %s: unexpected archive "
+		    "entry\n",
 		    repo->uri);
-		r = -EINVAL;
-		return r;
 	}
 	if (archive_entry_size(entry) == 0) {
 		repo->stage = xbps_dictionary_create();
@@ -262,9 +256,9 @@ repo_read_stage(struct xbps_repo *repo, struct archive *ar)
 
 	repo->stage = xbps_archive_get_dictionary(ar, entry);
 	if (!repo->stage) {
-		xbps_error_printf("failed to open repository: %s: reading stage: %s\n",
+		return xbps_error_errno(EIO,
+		    "failed to open repository: %s: reading stage: %s\n",
 		    repo->uri, archive_error_string(ar));
-		return -EIO;
 	}
 	xbps_dictionary_make_immutable(repo->stage);
 	return 0;
@@ -294,14 +288,15 @@ repo_open_local(struct xbps_repo *repo, struct archive *ar)
 	char path[PATH_MAX];
 	int r;
 
+
 	if (repo->is_remote) {
 		char *cachedir;
 		cachedir = xbps_get_remote_repo_string(repo->uri);
 		if (!cachedir) {
-			r = -EINVAL;
-			xbps_error_printf("failed to open repository: %s: invalid repository url\n",
+			return xbps_error_errno(EINVAL,
+			    "failed to open repository: %s: invalid repository "
+			    "url\n",
 			    repo->uri);
-			goto err;
 		}
 		r = snprintf(path, sizeof(path), "%s/%s/%s-repodata",
 		    repo->xhp->metadir, cachedir, repo->arch);
@@ -310,23 +305,17 @@ repo_open_local(struct xbps_repo *repo, struct archive *ar)
 		r = snprintf(path, sizeof(path), "%s/%s-repodata", repo->uri, repo->arch);
 	}
 	if (r < 0 || (size_t)r >= sizeof(path)) {
-		r = -ENAMETOOLONG;
-		xbps_error_printf("failed to open repository: %s: repository path too long\n",
+		return xbps_error_errno(ENAMETOOLONG,
+		    "failed to open repository: %s: repository path too long\n",
 		    repo->uri);
-		goto err;
 	}
 
 	r = xbps_archive_read_open(ar, path);
-	if (r < 0) {
-		if (r != -ENOENT) {
-			xbps_error_printf("failed to open repodata: %s: %s\n",
-			    path, strerror(-r));
-		}
-		goto err;
+	if (r < 0 && r != -ENOENT) {
+		return xbps_error_errno(r,
+		    "failed to open repodata: %s: %s\n", path,
+		    strerror(-r));
 	}
-
-	return 0;
-err:
 	return r;
 }
 
@@ -338,15 +327,16 @@ repo_open_remote(struct xbps_repo *repo, struct archive *ar)
 
 	r = snprintf(url, sizeof(url), "%s/%s-repodata", repo->uri, repo->arch);
 	if (r < 0 || (size_t)r >= sizeof(url)) {
-		xbps_error_printf("failed to open repository: %s: repository url too long\n",
+		return xbps_error_errno(ENAMETOOLONG,
+		    "failed to open repository: %s: repository url too long\n",
 		    repo->uri);
-		return -ENAMETOOLONG;
 	}
 
 	r = xbps_archive_read_open_remote(ar, url);
 	if (r < 0) {
-		xbps_error_printf("failed to open repository: %s: %s\n", repo->uri, strerror(-r));
-		return r;
+		return xbps_error_errno(r,
+		    "failed to open repository: %s: %s\n", repo->uri,
+		    strerror(-r));
 	}
 
 	return 0;
@@ -359,11 +349,9 @@ repo_open(struct xbps_handle *xhp, struct xbps_repo *repo)
 	int r;
 
 	ar = xbps_archive_read_new();
-	if (!ar) {
-		r = -errno;
-		xbps_error_printf("failed to open repo: %s\n", strerror(-r));
-		return r;
-	}
+	if (!ar)
+		return xbps_error_errno(
+		    errno, "failed to open repo: %s\n", strerror(errno));
 
 	if (repo->is_remote && (xhp->flags & XBPS_FLAG_REPOS_MEMSYNC))
 		r = repo_open_remote(repo, ar);
@@ -497,9 +485,7 @@ xbps_repo_open(struct xbps_handle *xhp, const char *url)
 
 	repo = calloc(1, sizeof(*repo));
 	if (!repo) {
-		r = -errno;
-		xbps_error_printf("failed to open repository: %s\n", strerror(-r));
-		errno = -r;
+		xbps_error_oom();
 		return NULL;
 	}
 	repo->xhp = xhp;

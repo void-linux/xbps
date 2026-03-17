@@ -29,12 +29,12 @@
 #include <string.h>
 #include <strings.h>
 #include <errno.h>
-#include <ctype.h>
 #include <assert.h>
 #include <unistd.h>
 #include <getopt.h>
 
 #include <xbps.h>
+
 #include "../xbps-install/defs.h"
 
 static void __attribute__((noreturn))
@@ -88,11 +88,11 @@ int
 main(int argc, char **argv)
 {
 	xbps_dictionary_t dict;
-	struct xbps_handle xh;
+	struct xbps_handle xh = {0};
 	struct xferstat xfer;
-	const char *version, *rootdir = NULL, *confdir = NULL;
+	const char *version;
 	char pkgname[XBPS_NAME_SIZE], *filename;
-	int flags = 0, c, rv = 0, i = 0;
+	int c, rv = 0, i = 0;
 	const struct option longopts[] = {
 		{ "config", required_argument, NULL, 'C' },
 		{ "debug", no_argument, NULL, 'd' },
@@ -108,17 +108,17 @@ main(int argc, char **argv)
 			usage(false);
 			/* NOTREACHED */
 		case 'C':
-			confdir = optarg;
+			xbps_strlcpy(xh.confdir, optarg, sizeof(xh.confdir));
 			break;
 		case 'r':
 			/* To specify the root directory */
-			rootdir = optarg;
+			xbps_strlcpy(xh.rootdir, optarg, sizeof(xh.rootdir));
 			break;
 		case 'd':
-			flags |= XBPS_FLAG_DEBUG;
+			xh.flags |= XBPS_FLAG_DEBUG;
 			break;
 		case 'v':
-			flags |= XBPS_FLAG_VERBOSE;
+			xh.flags |= XBPS_FLAG_VERBOSE;
 			break;
 		case 'V':
 			printf("%s\n", XBPS_RELVER);
@@ -139,8 +139,6 @@ main(int argc, char **argv)
 		/* NOTREACHED */
 	}
 
-	memset(&xh, 0, sizeof(xh));
-
 	if ((strcmp(argv[0], "version") == 0) ||
 	    (strcmp(argv[0], "real-version") == 0) ||
 	    (strcmp(argv[0], "arch") == 0) ||
@@ -151,11 +149,6 @@ main(int argc, char **argv)
 		*/
 		xh.fetch_cb = fetch_file_progress_cb;
 		xh.fetch_cb_data = &xfer;
-		xh.flags = flags;
-		if (rootdir)
-			xbps_strlcpy(xh.rootdir, rootdir, sizeof(xh.rootdir));
-		if (confdir)
-			xbps_strlcpy(xh.confdir, confdir, sizeof(xh.confdir));
 		if ((rv = xbps_init(&xh)) != 0) {
 			xbps_error_printf("xbps-uhelper: failed to "
 			    "initialize libxbps: %s.\n", strerror(rv));
@@ -176,8 +169,10 @@ main(int argc, char **argv)
 				xbps_error_printf("Could not find package '%s'\n", argv[i]);
 				rv = 1;
 			} else {
-				xbps_dictionary_get_cstring_nocopy(dict, "pkgver", &version);
-				printf("%s\n", xbps_pkg_version(version));
+				const char *pkgver = NULL;
+				if (!xbps_dictionary_get_cstring_nocopy(dict, "pkgver", &pkgver))
+					xbps_unreachable();
+				printf("%s\n", xbps_pkg_version(pkgver));
 			}
 		}
 	} else if (strcmp(argv[0], "real-version") == 0) {
@@ -356,13 +351,13 @@ main(int argc, char **argv)
 		}
 		rv = xbps_pkgpattern_match(argv[1], argv[2]);
 		if (rv >= 0) {
-			if (flags & XBPS_FLAG_VERBOSE) {
+			if (xh.flags & XBPS_FLAG_VERBOSE) {
 				fprintf(stderr, "%s %s %s\n",
 					argv[1],
 					(rv == 1) ? "matches" : "does not match",
 					argv[2]);
 			}
-		} else if (flags & XBPS_FLAG_VERBOSE) {
+		} else if (xh.flags & XBPS_FLAG_VERBOSE) {
 			xbps_error_printf("%s: not a pattern\n", argv[2]);
 		}
 		exit(rv);
@@ -374,7 +369,7 @@ main(int argc, char **argv)
 		}
 
 		rv = xbps_cmpver(argv[1], argv[2]);
-		if (flags & XBPS_FLAG_VERBOSE) {
+		if (xh.flags & XBPS_FLAG_VERBOSE) {
 			fprintf(stderr, "%s %s %s\n",
 				argv[1],
 				(rv == 1) ? ">" : ((rv == 0) ? "=" : "<"),

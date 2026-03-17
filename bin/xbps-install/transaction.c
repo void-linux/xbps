@@ -132,47 +132,50 @@ show_dry_run_actions(struct transaction *trans)
 }
 
 static void
-show_package_list(struct transaction *trans, xbps_trans_type_t ttype, unsigned int cols)
+show_package_list(struct transaction *trans, xbps_trans_type_t list_type, unsigned int cols)
 {
-	xbps_dictionary_t ipkgd;
+	char buf[1024];
 	xbps_object_t obj;
-	xbps_trans_type_t tt;
-	const char *pkgver, *pkgname, *ipkgver, *version, *iversion;
-	char *buf = NULL;
 
 	while ((obj = xbps_object_iterator_next(trans->iter)) != NULL) {
+		xbps_trans_type_t tt;
+		const char *pkgver = NULL, *pkgname = NULL;
 		bool dload = false;
 
-		pkgver = ipkgver = version = iversion = NULL;
 		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 		xbps_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
 		xbps_dictionary_get_bool(obj, "download", &dload);
-		if (ttype == XBPS_TRANS_DOWNLOAD && dload) {
+		if (list_type == XBPS_TRANS_DOWNLOAD && dload) {
 			tt = XBPS_TRANS_DOWNLOAD;
 		} else {
 			tt = xbps_transaction_pkg_type(obj);
-			if (ttype == XBPS_TRANS_INSTALL && tt == XBPS_TRANS_REINSTALL) {
+			if (list_type == XBPS_TRANS_INSTALL && tt == XBPS_TRANS_REINSTALL) {
 				tt = XBPS_TRANS_INSTALL;
 			}
 		}
 
-		buf = NULL;
+		if (tt != list_type)
+			continue;
+
 		if (tt == XBPS_TRANS_UPDATE) {
-			/* get installed pkgver */
+			xbps_dictionary_t ipkgd;
+			const char *version = NULL, *iversion = NULL, *ipkgver = NULL;
+			int l;
+
 			ipkgd = xbps_pkgdb_get_pkg(trans->xhp, pkgname);
-			assert(ipkgd);
-			xbps_dictionary_get_cstring_nocopy(ipkgd, "pkgver", &ipkgver);
+			if (!ipkgd)
+				xbps_unreachable();
+			if (!xbps_dictionary_get_cstring_nocopy(ipkgd, "pkgver", &ipkgver))
+				xbps_unreachable();
 			version = xbps_pkg_version(pkgver);
 			iversion = xbps_pkg_version(ipkgver);
-			buf = xbps_xasprintf("%s (%s -> %s)", pkgname, iversion, version);
-		}
-		if (ttype == tt) {
-			if (buf) {
-				print_package_line(buf, cols, false);
-				free(buf);
-			} else {
-				print_package_line(pkgver, cols, false);
-			}
+			l = snprintf(buf, sizeof(buf), "%s (%s -> %s)", pkgname,
+			    iversion, version);
+			if (l < 0 || (size_t)l >= sizeof(buf))
+				xbps_unreachable();
+			print_package_line(buf, cols, false);
+		} else {
+			print_package_line(pkgver, cols, false);
 		}
 	}
 	xbps_object_iterator_reset(trans->iter);

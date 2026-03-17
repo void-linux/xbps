@@ -96,8 +96,8 @@ search_cb(struct xbps_handle *xhp UNUSED, xbps_object_t pkgd,
 		abort();
 
 	if (!xbps_dictionary_get_cstring_nocopy(pkgd, "short_desc", &desc)) {
-		xbps_error_printf("%s: missing short_desc property\n", pkgver);
-		return -EINVAL;
+		return xbps_error_errno(
+		    EINVAL, "%s: missing short_desc property\n", pkgver);
 	}
 
 	if (ctx->repo_mode && xbps_match_virtual_pkg_in_dict(pkgd, ctx->pattern))
