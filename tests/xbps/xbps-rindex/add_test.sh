@@ -60,39 +60,38 @@ stage_head() {
 stage_body() {
 	mkdir -p some_repo pkg_A pkg_B
 	touch pkg_A/file00 pkg_B/file01
+
 	cd some_repo
-	xbps-create -A noarch -n foo-1.0_1 -s "foo pkg" --shlib-provides "libfoo.so.1" ../pkg_A
-	atf_check_equal $? 0
-	xbps-rindex -d -a $PWD/*.xbps
-	atf_check_equal $? 0
+	atf_check -o ignore -- xbps-create -A noarch -n foo-1.0_1 -s "foo pkg" --shlib-provides "libfoo.so.1" ../pkg_A
+
+	atf_check -e ignore -o match:"index: added \`foo-1.0_1'" -- \
+		xbps-rindex -d -a $PWD/*.xbps
+
 	atf_check -o inline:"    1 $PWD (RSA unsigned)\n" -- \
 		xbps-query -r ../root -i --repository=$PWD -L
 
-	xbps-create -A noarch -n foo-1.1_1 -s "foo pkg" --shlib-provides "libfoo.so.2" ../pkg_A
-	atf_check_equal $? 0
-	xbps-rindex -d -a $PWD/*.xbps
-	atf_check_equal $? 0
+	atf_check -o ignore -- xbps-create -A noarch -n foo-1.1_1 -s "foo pkg" --shlib-provides "libfoo.so.2" ../pkg_A
+	atf_check -e ignore -o match:"index: added \`foo-1.1_1'" -- xbps-rindex -d -a $PWD/*.xbps
 	atf_check -o inline:"    1 $PWD (RSA unsigned)\n" -- \
 		xbps-query -r ../root -i --repository=$PWD -L
 
-	xbps-create -A noarch -n bar-1.0_1 -s "foo pkg" --shlib-requires "libfoo.so.2" ../pkg_B
-	atf_check_equal $? 0
-	xbps-rindex -d -a $PWD/*.xbps
-	atf_check_equal $? 0
+	atf_check -o ignore -- xbps-create -A noarch -n bar-1.0_1 -s "foo pkg" --shlib-requires "libfoo.so.2" ../pkg_B
+	atf_check -e ignore -o match:"index: added \`bar-1.0_1'" -- \
+		 xbps-rindex -d -a $PWD/*.xbps
 	atf_check -o inline:"    2 $PWD (RSA unsigned)\n" -- \
 		xbps-query -r ../root -i --repository=$PWD -L
 
-	xbps-create -A noarch -n foo-1.2_1 -s "foo pkg" --shlib-provides "libfoo.so.3" ../pkg_A
-	atf_check_equal $? 0
-	xbps-rindex -d -a $PWD/*.xbps
-	atf_check_equal $? 0
+	atf_check -o ignore -- xbps-create -A noarch -n foo-1.2_1 -s "foo pkg" --shlib-provides "libfoo.so.3" ../pkg_A
+	atf_check -e ignore -o not-match:"index: added \`foo-1.2_1'" -- \
+		xbps-rindex -d -a $PWD/*.xbps
 	atf_check -o inline:"    2 $PWD (Staged) (RSA unsigned)\n" -- \
 		xbps-query -r ../root -i --repository=$PWD -L
 
-	xbps-create -A noarch -n bar-1.1_1 -s "foo pkg" --shlib-requires "libfoo.so.3" ../pkg_A
-	atf_check_equal $? 0
-	xbps-rindex -d -a $PWD/*.xbps
-	atf_check_equal $? 0
+	atf_check -o ignore -- xbps-create -A noarch -n bar-1.1_1 -s "foo pkg" --shlib-requires "libfoo.so.3" ../pkg_A
+	atf_check -e ignore \
+		-o match:"added \`bar-1.1_1'" \
+		-o match:"added \`foo-1.2_1'" \
+		-- xbps-rindex -d -a $PWD/*.xbps
 	atf_check -o inline:"    2 $PWD (RSA unsigned)\n" -- \
 		xbps-query -r ../root -i --repository=$PWD -L
 }
@@ -111,47 +110,52 @@ stage_resolve_bug_body() {
 	cd some_repo
 
 	# first add the provider and the requirer to the repo
-	xbps-create -A noarch -n provider-1.0_1 -s "foo pkg" --shlib-provides "libfoo.so.1 libbar.so.1" ../provider
-	atf_check_equal $? 0
-	xbps-create -A noarch -n require-1.0_1 -s "foo pkg" --shlib-requires "libfoo.so.1" ../requirer
-	atf_check_equal $? 0
-	xbps-create -A noarch -n stage-trigger-1.0_1 -s "foo pkg" --shlib-requires "libbar.so.1" ../stage-trigger
-	atf_check_equal $? 0
-	xbps-rindex -d -a $PWD/*.xbps
-	atf_check_equal $? 0
+	atf_check -o ignore -- xbps-create -A noarch -n provider-1.0_1 -s "foo pkg" --shlib-provides "libfoo.so.1 libbar.so.1" ../provider
+	atf_check -o ignore -- xbps-create -A noarch -n require-1.0_1 -s "foo pkg" --shlib-requires "libfoo.so.1" ../requirer
+	atf_check -o ignore -- xbps-create -A noarch -n stage-trigger-1.0_1 -s "foo pkg" --shlib-requires "libbar.so.1" ../stage-trigger
+	atf_check \
+		-e ignore \
+		-o match:"some_repo: index: added \`provider-1\.0_1' \(noarch\)\." \
+		-o match:"some_repo: index: added \`require-1\.0_1' \(noarch\)\." \
+		-o match:"some_repo: index: added \`stage-trigger-1\.0_1' \(noarch\)\." \
+		 -- xbps-rindex -a $PWD/*.xbps
 
 	# then add libprovider that also provides the library
-	xbps-create -A noarch -n libprovider-1.0_2 -s "foo pkg" --shlib-provides "libfoo.so.1" ../libprovider
-	atf_check_equal $? 0
-	xbps-rindex -d -a $PWD/*.xbps
-	atf_check_equal $? 0
+	atf_check -o ignore -- xbps-create -A noarch -n libprovider-1.0_2 -s "foo pkg" --shlib-provides "libfoo.so.1" ../libprovider
+	atf_check \
+		-e ignore \
+		-o match:"some_repo: index: added \`libprovider-1\.0_2' \(noarch\)\." \
+		-- xbps-rindex -a $PWD/*.xbps
 	atf_check -o inline:"    4 $PWD (RSA unsigned)\n" -- \
 		xbps-query -r ../root -i --repository=$PWD -L
 
 	# trigger staging
-	xbps-create -A noarch -n provider-1.0_2 -s "foo pkg" --shlib-provides "libfoo.so.1" ../provider
-	atf_check_equal $? 0
-	xbps-rindex -d -a $PWD/*.xbps
-	atf_check_equal $? 0
+	atf_check -o ignore -- xbps-create -A noarch -n provider-1.0_2 -s "foo pkg" --shlib-provides "libfoo.so.1" ../provider
+	atf_check \
+		-e ignore \
+		-o match:"some_repo: stage: added \`provider-1\.0_2' \(noarch\)\." \
+		-- xbps-rindex -a $PWD/*.xbps
 	atf_check -o inline:"    4 $PWD (Staged) (RSA unsigned)\n" -- \
 		xbps-query -r ../root -i --repository=$PWD -L
 
 	# then add a new provider not containing the provides field. This resulted in
 	# a stage state despites the library is resolved through libprovides
-	xbps-create -A noarch -n provider-1.0_3 -s "foo pkg" ../provider
-	atf_check_equal $? 0
-	xbps-rindex -d -a $PWD/*.xbps
-	atf_check_equal $? 0
+	atf_check -o ignore -- xbps-create -A noarch -n provider-1.0_3 -s "foo pkg" ../provider
+	atf_check \
+		-e ignore \
+		-o match:"some_repo: stage: added \`provider-1\.0_3' \(noarch\)\." \
+		-- xbps-rindex -a $PWD/*.xbps
 	atf_check -o inline:"    4 $PWD (Staged) (RSA unsigned)\n" -- \
 		xbps-query -r ../root -i --repository=$PWD -L
 
 	# resolve staging
 	# the actual bug appeared here: libfoo.so.1 is still provided by libprovider, but
 	# xbps-rindex fails to register that.
-	xbps-create -A noarch -n stage-trigger-1.0_2 -s "foo pkg" ../stage-trigger
-	atf_check_equal $? 0
-	xbps-rindex -d -a $PWD/*.xbps
-	atf_check_equal $? 0
+	atf_check -o ignore -- xbps-create -A noarch -n stage-trigger-1.0_2 -s "foo pkg" ../stage-trigger
+	atf_check \
+		-e ignore \
+		-o match:"some_repo: index: added \`stage-trigger-1\.0_2' \(noarch\)\." \
+		-- xbps-rindex -a $PWD/*.xbps
 	atf_check -o inline:"    4 $PWD (RSA unsigned)\n" -- \
 		xbps-query -r ../root -i --repository=$PWD -L
 }
@@ -194,10 +198,163 @@ stage_stacked_body() {
 
 }
 
+atf_test_case stage_multi_repos
+
+stage_multi_repos_head() {
+	atf_set "descr" "xbps-rindex(1) -a: staging multiple repositories"
+}
+
+stage_multi_repos_body() {
+	mkdir -p repo1 repo2 root pkg
+
+	cd repo1
+	atf_check -o ignore -- xbps-create -A noarch -n flac-1.4.3_1 -s "flac pkg" --shlib-provides "libFLAC.so.12" ../pkg
+	atf_check -o ignore -- xbps-create -A noarch -n ruby-3.3.8_1 -s "ruby pkg" --shlib-provides "libruby.so.3.3" ../pkg
+	atf_check -o ignore -- xbps-create -A noarch -n A-1.0_1 -s "A pkg" --shlib-requires "libFLAC.so.12" ../pkg
+	atf_check -o ignore -- xbps-create -A noarch -n B-1.0_1 -s "B pkg" --shlib-requires  "libruby.so.3.3" ../pkg
+	atf_check -o ignore -- xbps-create -A noarch -n unaffected-1.0_1 -s "unaffected pkg" --shlib-provides "libfoo.so.1" ../pkg
+	cd ..
+
+	cd repo2
+	atf_check -o ignore -- xbps-create -A noarch -n AA-1.0_1 -s "AA pkg" --shlib-requires "libFLAC.so.12" ../pkg
+	atf_check -o ignore -- xbps-create -A noarch -n BB-1.0_1 -s "BB pkg" --shlib-requires  "libruby.so.3.3" ../pkg
+	atf_check -o ignore -- xbps-create -A noarch -n other-unaffected-1.0_1 -s "other unaffected pkg" --shlib-requires "libfoo.so.1" ../pkg
+	cd ..
+
+	atf_check -e ignore \
+		-o match:"index: added \`A-1.0_1'" \
+		-o match:"index: added \`B-1.0_1'" \
+		-o match:"index: added \`flac-1.4.3_1'" \
+		-o match:"index: added \`ruby-3.3.8_1'" \
+		 -- xbps-rindex -v -R repo1 -R repo2 -a \
+		repo1/flac-1.4.3_1.noarch.xbps \
+		repo1/ruby-3.3.8_1.noarch.xbps \
+		repo1/A-1.0_1.noarch.xbps \
+		repo1/B-1.0_1.noarch.xbps \
+		repo1/unaffected-1.0_1.noarch.xbps
+	atf_check -e ignore \
+		-o match:"index: added \`AA-1.0_1'" \
+		-o match:"index: added \`BB-1.0_1'" \
+		-- xbps-rindex -v -R repo1 -R repo2 -a \
+		repo2/AA-1.0_1.noarch.xbps \
+		repo2/BB-1.0_1.noarch.xbps \
+		repo2/other-unaffected-1.0_1.noarch.xbps
+
+	cd repo1
+	atf_check -o ignore -- xbps-create -A noarch -n flac-1.5.0_1 -s "flac pkg" --shlib-provides "libFLAC.so.14" ../pkg
+	cd ..
+
+	atf_check -e ignore -o match:"repo1: stage: added \`flac-1.5.0_1'" \
+		-- xbps-rindex -v -R repo1 -R repo2 -a repo1/flac-1.5.0_1.noarch.xbps
+
+	atf_check \
+		-o match:"repo1 \(Staged\)" \
+		-o not-match:"repo2 \(Staged\)" \
+		-- xbps-query -r ../root -i --repository=repo1 --repository=repo2 -L
+
+	cd repo2
+	atf_check -o ignore -- xbps-create -A noarch -n AA-1.0_2 -s "AA pkg" --shlib-requires "libFLAC.so.14" ../pkg
+	cd ..
+
+	atf_check -o match:"repo2: stage: added \`AA-1.0_2'" \
+		-- xbps-rindex -v -R repo1 -R repo2 -a repo2/AA-1.0_2.noarch.xbps
+
+	atf_check \
+		-o match:"repo1 \(Staged\)" \
+		-o match:"repo2 \(Staged\)" \
+		-- xbps-query -r ../root -i --repository=repo1 --repository=repo2 -L
+
+	cd repo1
+	atf_check -o ignore -- xbps-create -A noarch -n ruby-3.4.5_1 -s "ruby pkg" --shlib-provides "libruby.so.3.4" ../pkg
+	cd ..
+	atf_check -o match:"repo1: stage: added \`ruby-3.4.5_1'" \
+		-- xbps-rindex -v -R repo1 -R repo2 -a repo1/ruby-3.4.5_1.noarch.xbps
+
+	atf_check \
+		-o match:"repo1 \(Staged\)" \
+		-o match:"repo2 \(Staged\)" \
+		-- xbps-query -r ../root -i --repository=repo1 --repository=repo2 -L
+
+	cd repo2
+	atf_check -o ignore -- xbps-create -A noarch -n BB-1.0_2 -s "BB pkg" --shlib-requires "libruby.so.3.4" ../pkg
+	cd ..
+	atf_check -o match:"repo2: stage: added \`BB-1.0_2'" \
+		-- xbps-rindex -v -R repo1 -R repo2 -a repo2/BB-1.0_2.noarch.xbps
+
+	cd repo1
+	atf_check -o ignore -- xbps-create -A noarch -n A-1.0_2 -s "A pkg" --shlib-requires "libFLAC.so.14" ../pkg
+	atf_check -o ignore -- xbps-create -A noarch -n B-1.0_2 -s "B pkg" --shlib-requires "libruby.so.3.4" ../pkg
+	cd ..
+	atf_check \
+		-o match:"repo1: stage: added \`A-1.0_2'" \
+		-- xbps-rindex -v -R repo1 -R repo2 -a repo1/A-1.0_2.noarch.xbps
+
+	atf_check \
+		-o match:"repo1 \(Staged\)" \
+		-o match:"repo2 \(Staged\)" \
+		-- xbps-query -r ../root -i --repository=repo1 --repository=repo2 -L
+
+	atf_check \
+		-o match:"repo1: index: added \`A-1\.0_2'" \
+		-o match:"repo1: index: added \`B-1\.0_2'" \
+		-o match:"repo1: index: added \`flac-1\.5\.0_1'" \
+		-o match:"repo1: index: added \`ruby-3\.4\.5_1'" \
+		-o match:"repo2: index: added \`AA-1\.0_2'" \
+		-o match:"repo2: index: added \`BB-1\.0_2'" \
+		-- xbps-rindex -v -R repo1 -R repo2 -a repo1/B-1.0_2.noarch.xbps
+
+	atf_check \
+		-o not-match:"repo1 \(Staged\)" \
+		-o not-match:"repo2 \(Staged\)" \
+		-- xbps-query -r ../root -i --repository=repo1 --repository=repo2 -L
+}
+
+atf_test_case stage_dependency
+
+stage_dependency_head() {
+	atf_set "descr" "xbps-rindex(1) -a: stage repository due to broken dependency"
+}
+
+stage_dependency_body() {
+	atf_expect_fail "not implemented"
+	mkdir -p repo1 repo2 repo3 repo4 root pkg
+
+	cd repo1
+	atf_check -o ignore -- xbps-create -A noarch -n A-1.0_1 -s "A pkg" --dependencies "B<2.0_1" ../pkg
+	atf_check -o ignore -- xbps-create -A noarch -n B-1.0_1 -s "B pkg" ../pkg
+	atf_check -o ignore -- xbps-create -A noarch -n unaffected-1.0_1 -s "unaffected pkg" --dependencies "B>=1.0_1" ../pkg
+	cd ..
+
+	atf_check \
+		-e ignore \
+		-o match:"index: added \`A-1\.0_1'" \
+		-o match:"index: added \`B-1\.0_1'" \
+		-o match:"index: added \`unaffected-1\.0_1'" \
+		 -- xbps-rindex -v -R repo1 -a \
+		repo1/A-1.0_1.noarch.xbps \
+		repo1/B-1.0_1.noarch.xbps \
+		repo1/unaffected-1.0_1.noarch.xbps
+
+	cd repo1
+	atf_check -o ignore -- xbps-create -A noarch -n B-2.0_1 -s "B pkg" ../pkg
+	cd ..
+
+	atf_check \
+		-e ignore \
+		-o match:"repo1: stage: added \`B-2\.0_1'" \
+		-- xbps-rindex -v -R repo1 -R repo2 -R repo3 -R repo4 -a repo1/B-2.0_1.noarch.xbps
+
+	atf_check \
+		-o match:"repo1 \(Staged\)" \
+		-- xbps-query -r ../root -i --repository=repo1 --repository=repo2 -L
+}
+
 atf_init_test_cases() {
 	atf_add_test_case update
 	atf_add_test_case revert
 	atf_add_test_case stage
 	atf_add_test_case stage_resolve_bug
 	atf_add_test_case stage_stacked
+	atf_add_test_case stage_multi_repos
+	atf_add_test_case stage_dependency
 }

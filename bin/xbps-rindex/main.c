@@ -30,9 +30,10 @@
 #include <getopt.h>
 
 #include "defs.h"
+#include "xbps/xbps_array.h"
 
 static void __attribute__((noreturn))
-usage(bool fail)
+usage(int status)
 {
 	fprintf(stdout,
 	    "Usage: xbps-rindex [OPTIONS] MODE ARGUMENTS\n\n"
@@ -46,19 +47,28 @@ usage(bool fail)
 	    "     --compression <fmt>            Compression format: none, gzip, bzip2, lz4, xz, zstd (default)\n"
 	    "     --privkey <key>                Path to the private key for signing\n"
 	    "     --signedby <string>            Signature details, i.e \"name <email>\"\n\n"
+	    " -R, --repository <dir>             Add a local repository\n"
 	    "MODE\n"
 	    " -a, --add <repodir/file.xbps> ...  Add package(s) to repository index\n"
 	    " -c, --clean <repodir>              Clean repository index\n"
 	    " -r, --remove-obsoletes <repodir>   Removes obsolete packages from repository\n"
 	    " -s, --sign <repodir>               Initialize repository metadata signature\n"
 	    " -S, --sign-pkg <file.xbps> ...     Sign binary package archive\n");
-	exit(fail ? EXIT_FAILURE : EXIT_SUCCESS);
+	exit(status);
+}
+
+static void __attribute__((noreturn))
+multiple_mode_error(void)
+{
+	xbps_error_printf("only one mode can be specified: add, clean, "
+	    "remove-obsoletes, sign or sign-pkg.\n");
+	exit(EXIT_FAILURE);
 }
 
 int
 main(int argc, char **argv)
 {
-	const char *shortopts = "acdfhrsCSVv";
+	const char *shortopts = "acdfhrR:sCSVv";
 	struct option longopts[] = {
 		{ "add", no_argument, NULL, 'a' },
 		{ "clean", no_argument, NULL, 'c' },
@@ -74,17 +84,22 @@ main(int argc, char **argv)
 		{ "sign-pkg", no_argument, NULL, 'S'},
 		{ "hashcheck", no_argument, NULL, 'C' },
 		{ "compression", required_argument, NULL, 2},
+		{ "repository", required_argument, NULL, 'R'},
 		{ NULL, 0, NULL, 0 }
 	};
-	struct xbps_handle xh;
+	struct xbps_handle xh = {0};
 	const char *compression = NULL;
 	const char *privkey = NULL, *signedby = NULL;
-	int rv, c, flags = 0;
-	bool add_mode, clean_mode, rm_mode, sign_mode, sign_pkg_mode, force,
-			 hashcheck;
-
-	add_mode = clean_mode = rm_mode = sign_mode = sign_pkg_mode = force =
-		hashcheck = false;
+	int rv, c;
+	xbps_array_t repos = NULL;
+	enum {
+		INDEX_ADD = 1,
+		CLEAN_INDEX,
+		REMOVE_OBSOLETES,
+		SIGN_REPO,
+		SIGN_PACKAGE,
+	} mode = 0;
+	bool force = false, hashcheck = false;
 
 	while ((c = getopt_long(argc, argv, shortopts, longopts, NULL)) != -1) {
 		switch (c) {
@@ -98,77 +113,93 @@ main(int argc, char **argv)
 			compression = optarg;
 			break;
 		case 'a':
-			add_mode = true;
+			if (mode != 0)
+				multiple_mode_error();
+			mode = INDEX_ADD;
 			break;
 		case 'c':
-			clean_mode = true;
+			if (mode != 0)
+				multiple_mode_error();
+			mode = CLEAN_INDEX;
 			break;
 		case 'd':
-			flags |= XBPS_FLAG_DEBUG;
+			xh.flags |= XBPS_FLAG_DEBUG;
 			break;
 		case 'f':
 			force = true;
 			break;
 		case 'h':
-			usage(false);
+			usage(EXIT_SUCCESS);
 			/* NOTREACHED */
 		case 'r':
-			rm_mode = true;
+			if (mode != 0)
+				multiple_mode_error();
+			mode = REMOVE_OBSOLETES;
 			break;
 		case 's':
-			sign_mode = true;
+			if (mode != 0)
+				multiple_mode_error();
+			mode = SIGN_REPO;
 			break;
 		case 'C':
 			hashcheck = true;
 			break;
+		case 'R':
+			if (!repos)
+				repos = xbps_array_create();
+			if (!repos || !xbps_array_add_cstring(repos, optarg)) {
+				xbps_error_oom();
+				exit(1);
+			}
+			break;
 		case 'S':
-			sign_pkg_mode = true;
+			if (mode != 0)
+				multiple_mode_error();
+			mode = SIGN_PACKAGE;
 			break;
 		case 'v':
-			flags |= XBPS_FLAG_VERBOSE;
+			xh.flags |= XBPS_FLAG_VERBOSE;
 			break;
 		case 'V':
 			printf("%s\n", XBPS_RELVER);
 			exit(EXIT_SUCCESS);
 		case '?':
 		default:
-			usage(true);
+			usage(EXIT_FAILURE);
 			/* NOTREACHED */
 		}
 	}
-	if ((argc == optind) ||
-	    (!add_mode && !clean_mode && !rm_mode && !sign_mode && !sign_pkg_mode)) {
-		usage(true);
+
+	if ((argc == optind) || mode == 0) {
+		usage(EXIT_FAILURE);
 		/* NOTREACHED */
-	} else if ((add_mode && (clean_mode || rm_mode || sign_mode || sign_pkg_mode)) ||
-		   (clean_mode && (add_mode || rm_mode || sign_mode || sign_pkg_mode)) ||
-		   (rm_mode && (add_mode || clean_mode || sign_mode || sign_pkg_mode)) ||
-		   (sign_mode && (add_mode || clean_mode || rm_mode || sign_pkg_mode)) ||
-		   (sign_pkg_mode && (add_mode || clean_mode || rm_mode || sign_mode))) {
-		xbps_error_printf("Only one mode can be specified: add, clean, "
-		    "remove-obsoletes, sign or sign-pkg.\n");
-		exit(EXIT_FAILURE);
 	}
 
 	/* initialize libxbps */
-	memset(&xh, 0, sizeof(xh));
-	xh.flags = flags;
 	if ((rv = xbps_init(&xh)) != 0) {
 		xbps_error_printf("failed to initialize libxbps: %s\n",
 		    strerror(rv));
 		exit(EXIT_FAILURE);
 	}
 
-	if (add_mode)
-		rv = index_add(&xh, optind, argc, argv, force, compression);
-	else if (clean_mode)
+	switch (mode) {
+	case INDEX_ADD:
+		rv = index_add(&xh, argc - optind, argv + optind, force,
+		    compression, repos);
+		break;
+	case CLEAN_INDEX:
 		rv = index_clean(&xh, argv[optind], hashcheck, compression);
-	else if (rm_mode)
+		break;
+	case REMOVE_OBSOLETES:
 		rv = remove_obsoletes(&xh, argv[optind]);
-	else if (sign_mode)
+		break;
+	case SIGN_REPO:
 		rv = sign_repo(&xh, argv[optind], privkey, signedby, compression);
-	else if (sign_pkg_mode)
+		break;
+	case SIGN_PACKAGE:
 		rv = sign_pkgs(&xh, optind, argc, argv, privkey, force);
+		break;
+	}
 
 	exit(rv);
 }
