@@ -88,9 +88,11 @@ compute_transaction_stats(struct xbps_handle *xhp)
 
 		if (ttype == XBPS_TRANS_REMOVE) {
 			rm_pkgcnt++;
-		} else if (ttype == XBPS_TRANS_CONFIGURE) {
+		} else if (!(xhp->flags & XBPS_FLAG_DOWNLOAD_ONLY) &&
+		          ttype == XBPS_TRANS_CONFIGURE) {
 			cf_pkgcnt++;
-		} else if (ttype == XBPS_TRANS_INSTALL || ttype == XBPS_TRANS_REINSTALL) {
+		} else if (!(xhp->flags & XBPS_FLAG_DOWNLOAD_ONLY) &&
+              (ttype == XBPS_TRANS_INSTALL || ttype == XBPS_TRANS_REINSTALL)) {
 			inst_pkgcnt++;
 		} else if (ttype == XBPS_TRANS_UPDATE) {
 			up_pkgcnt++;
