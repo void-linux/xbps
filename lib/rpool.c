@@ -62,6 +62,7 @@ int
 xbps_rpool_sync(struct xbps_handle *xhp, const char *uri)
 {
 	const char *repouri = NULL;
+	int repocount = 0;
 
 	for (unsigned int i = 0; i < xbps_array_count(xhp->repositories); i++) {
 		xbps_array_get_cstring_nocopy(xhp->repositories, i, &repouri);
@@ -76,7 +77,11 @@ xbps_rpool_sync(struct xbps_handle *xhp, const char *uri)
 			    xbps_fetch_error_string());
 			continue;
 		}
+		repocount++;
 	}
+
+	if(repocount == 0)
+		return -1;
 	return 0;
 }
 
