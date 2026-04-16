@@ -30,6 +30,8 @@ install:
 		xbps-pkgdb xbps-query xbps-reconfigure xbps-remove xbps-rindex; do \
 		ln -sf xbps $(DESTDIR)/$(SHAREDIR)/bash-completion/completions/$$file; \
 	done
+	install -d $(DESTDIR)/$(SHAREDIR)/fish/vendor_completions.d
+	install -m644 xbps-src.fish $(DESTDIR)/$(SHAREDIR)/fish/vendor_completions.d
 
 .PHONY: uninstall
 uninstall:
