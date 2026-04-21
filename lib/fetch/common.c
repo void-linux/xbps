@@ -1173,11 +1173,11 @@ fetch_ssl_verify_altname(STACK_OF(GENERAL_NAME) *altnames,
  * Verify server certificate by CN.
  */
 static int
-fetch_ssl_verify_cn(X509_NAME *subject, const char *host,
+fetch_ssl_verify_cn(const X509_NAME *subject, const char *host,
     struct addrinfo *ip)
 {
-	ASN1_STRING *namedata;
-	X509_NAME_ENTRY *nameentry;
+	const ASN1_STRING *namedata;
+	const X509_NAME_ENTRY *nameentry;
 	int cnlen, lastpos, loc, ret;
 	unsigned char *cn;
 
@@ -1215,7 +1215,7 @@ fetch_ssl_verify_hname(X509 *cert, const char *host)
 {
 	struct addrinfo *ip;
 	STACK_OF(GENERAL_NAME) *altnames;
-	X509_NAME *subject;
+	const X509_NAME *subject;
 	int ret;
 
 	ret = 0;
@@ -1355,7 +1355,7 @@ int
 fetch_ssl_cb_verify_crt(int verified, X509_STORE_CTX *ctx)
 {
 	X509 *crt;
-	X509_NAME *name;
+	const X509_NAME *name;
 	char *str;
 
 	str = NULL;
@@ -1391,7 +1391,7 @@ fetch_ssl(conn_t *conn, const struct url *URL, int verbose)
 
 #ifdef WITH_SSL
 	int ret;
-	X509_NAME *name;
+	const X509_NAME *name;
 	char *str;
 
 	(void)pthread_once(&ssl_init_once, ssl_init);
