@@ -545,7 +545,7 @@ ftw_cb(const char *fpath, const struct stat *sb, const struct dirent *dir UNUSED
 			xe->type = ENTRY_TYPE_FILES;
 		}
 
-		if (!xbps_file_sha256(xe->sha256, sizeof sha256, fpath))
+		if (!xbps_file_sha256(xe->sha256, sizeof xe->sha256, fpath))
 			die("failed to process hash for: %s", fpath);
 		xbps_dictionary_set_cstring(fileinfo, "sha256", xe->sha256);
 
