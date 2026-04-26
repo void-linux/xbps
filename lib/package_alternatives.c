@@ -60,7 +60,10 @@ left(const char *str)
 static const char *
 right(const char *str)
 {
-	return strchr(str, ':') + 1;
+	const char *p = strchr(str, ':');
+	if (!p)
+		return NULL;
+	return p + 1;
 }
 
 static const char *
@@ -130,6 +133,7 @@ remove_symlinks(struct xbps_handle *xhp, xbps_array_t a, const char *grname)
 			const char *tgt;
 			char *tgt_dup, *tgt_dir;
 			tgt = right(xbps_string_cstring_nocopy(str));
+			assert(tgt);
 			tgt_dup = strdup(tgt);
 			assert(tgt_dup);
 			tgt_dir = dirname(tgt_dup);
