@@ -249,8 +249,13 @@ process_one_alternative(const char *altgrname, const char *val)
 		if (a == NULL)
 			die("xbps_array_create");
 	}
-	altfiles = strchr(val, ':') + 1;
-	assert(altfiles);
+	altfiles = strchr(val, ':');
+	if (altfiles == NULL) {
+		fprintf(stderr, "%s: WARNING: ignoring malformed alternative: %s\n", _PROGNAME, val);
+		if (alloc) xbps_object_release(d);
+		return;
+	}
+	altfiles++;
 
 	xbps_array_add_cstring(a, altfiles);
 	xbps_dictionary_set(d, altgrname, a);
