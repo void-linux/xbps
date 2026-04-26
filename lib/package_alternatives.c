@@ -60,7 +60,8 @@ left(const char *str)
 static const char *
 right(const char *str)
 {
-	return strchr(str, ':') + 1;
+	const char *colon = strchr(str, ':');
+	return colon ? colon + 1 : NULL;
 }
 
 static const char *
