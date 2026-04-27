@@ -249,8 +249,10 @@ process_one_alternative(const char *altgrname, const char *val)
 		if (a == NULL)
 			die("xbps_array_create");
 	}
-	altfiles = strchr(val, ':') + 1;
-	assert(altfiles);
+	altfiles = strchr(val, ':');
+	if (!altfiles)
+		diex("invalid alternative");
+	altfiles += 1;
 
 	xbps_array_add_cstring(a, altfiles);
 	xbps_dictionary_set(d, altgrname, a);
@@ -278,7 +280,8 @@ process_dict_of_arrays(const char *key UNUSED, const char *val)
 
 	if (strchr(args, ' ') == NULL) {
 		altgrname = strtok(args, ":");
-		assert(altgrname);
+		if (!altgrname)
+			diex("invalid alternative");
 		process_one_alternative(altgrname, val);
 		goto out;
 	}
@@ -288,9 +291,12 @@ process_dict_of_arrays(const char *key UNUSED, const char *val)
 		char *b;
 
 		b = strdup(p);
-		assert(b);
+		if (!b)
+			die("strdup");
+
 		altgrname = strtok(b, ":");
-		assert(altgrname);
+		if (!altgrname)
+			diex("invalid alternative");
 		process_one_alternative(altgrname, p);
 		free(b);
 	}
