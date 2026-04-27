@@ -276,7 +276,8 @@ process_dict_of_arrays(const char *key UNUSED, const char *val)
 		return;
 
 	args = strdup(val);
-	assert(args);
+	if (!args)
+		die("strdup");
 
 	if (strchr(args, ' ') == NULL) {
 		altgrname = strtok(args, ":");
@@ -409,7 +410,8 @@ ftw_cb(const char *fpath, const struct stat *sb, const struct dirent *dir UNUSED
 	xbps_dictionary_set_cstring(fileinfo, "file", filep);
 	xbps_dictionary_set(all_filesd, fpath, fileinfo);
 	xe->file = strdup(fpath);
-	assert(xe->file);
+	if (!xe->file)
+		die("strdup");
 
 	if ((strcmp(fpath, "./INSTALL") == 0) ||
 	    (strcmp(fpath, "./REMOVE") == 0)) {
@@ -495,7 +497,8 @@ ftw_cb(const char *fpath, const struct stat *sb, const struct dirent *dir UNUSED
 				die("xbps_sanitize_path");
 			xbps_dictionary_set_cstring(fileinfo, "target", xe->target);
 		}
-		assert(xbps_dictionary_get(fileinfo, "target"));
+		if (!xbps_dictionary_get(fileinfo, "target"))
+			xbps_unreachable();
 	} else if (S_ISREG(sb->st_mode)) {
 		struct xentry *xep;
 		bool hlink = false;
