@@ -47,7 +47,7 @@
 static char *
 left(const char *str)
 {
-	char *e;
+	const char *e;
 
 	e = strchr(str, ':');
 	if (!e)
