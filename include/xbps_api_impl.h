@@ -103,7 +103,9 @@ char HIDDEN *xbps_get_remote_repo_string(const char *);
 int HIDDEN xbps_repo_sync(struct xbps_handle *, const char *);
 int HIDDEN xbps_file_hash_check_dictionary(struct xbps_handle *,
 		xbps_dictionary_t, const char *, const char *);
-int HIDDEN xbps_file_exec(struct xbps_handle *, const char *, ...);
+int HIDDEN xbps_file_exec(const struct xbps_handle *, const char *, ...);
+int HIDDEN xbps_file_exec_argv(const struct xbps_handle *xhp, const char **argv);
+int HIDDEN xbps_file_execp_argv(const struct xbps_handle *xhp, const char **argv);
 void HIDDEN xbps_set_cb_fetch(struct xbps_handle *, off_t, off_t, off_t,
 		const char *, bool, bool, bool);
 int HIDDEN xbps_set_cb_state(struct xbps_handle *, xbps_state_t, int,
@@ -127,5 +129,11 @@ xbps_array_t HIDDEN xbps_get_pkg_fulldeptree(struct xbps_handle *,
 struct xbps_repo HIDDEN *xbps_regget_repo(struct xbps_handle *,
 		const char *);
 int HIDDEN xbps_conf_init(struct xbps_handle *);
+
+struct xbps_hooks;
+struct xbps_hooks *xbps_hooks_init(struct xbps_handle *xhp);
+int xbps_hooks_pre_transaction(struct xbps_handle *xhp, struct xbps_hooks *hooks);
+int xbps_hooks_post_transaction(struct xbps_handle *xhp, struct xbps_hooks *hooks);
+void xbps_hooks_free(struct xbps_hooks *hooks);
 
 #endif /* !_XBPS_API_IMPL_H_ */
