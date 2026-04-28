@@ -47,14 +47,13 @@
 static char *
 left(const char *str)
 {
-	char *p;
-	size_t len;
+	char *e;
 
-	p = strdup(str);
-	len = strlen(p) - strlen(strchr(p, ':'));
-	p[len] = '\0';
+	e = strchr(str, ':');
+	if (!e)
+		return NULL;
 
-	return p;
+	return strndup(str, e - str);
 }
 
 static const char *
