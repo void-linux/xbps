@@ -691,6 +691,10 @@ struct xbps_handle {
 	 * 	- XBPS_FLAG_* (see above)
 	 */
 	int flags;
+	/**
+	* Number of parallel fetch jobs.
+	*/
+	unsigned int fetch_jobs;
 };
 
 /**
