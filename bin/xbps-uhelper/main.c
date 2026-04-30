@@ -176,8 +176,13 @@ main(int argc, char **argv)
 				xbps_error_printf("Could not find package '%s'\n", argv[i]);
 				rv = 1;
 			} else {
-				xbps_dictionary_get_cstring_nocopy(dict, "pkgver", &version);
-				printf("%s\n", xbps_pkg_version(version));
+				const char *pkgver = NULL;
+				if (!xbps_dictionary_get_cstring_nocopy(dict, "pkgver", &pkgver))
+					xbps_unreachable();
+				version = xbps_pkg_version(pkgver);
+				if (!version)
+					xbps_unreachable();
+				printf("%s\n", version);
 			}
 		}
 	} else if (strcmp(argv[0], "real-version") == 0) {
@@ -192,8 +197,13 @@ main(int argc, char **argv)
 				xbps_error_printf("Could not find package '%s'\n", argv[i]);
 				rv = 1;
 			} else {
-				xbps_dictionary_get_cstring_nocopy(dict, "pkgver", &version);
-				printf("%s\n", xbps_pkg_version(version));
+				const char *pkgver = NULL;
+				if (!xbps_dictionary_get_cstring_nocopy(dict, "pkgver", &pkgver))
+					xbps_unreachable();
+				version = xbps_pkg_version(pkgver);
+				if (!version)
+					xbps_unreachable();
+				printf("%s\n", version);
 			}
 		}
 	} else if (strcmp(argv[0], "getpkgversion") == 0) {

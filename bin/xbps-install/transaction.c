@@ -163,7 +163,11 @@ show_package_list(struct transaction *trans, xbps_trans_type_t ttype, unsigned i
 			assert(ipkgd);
 			xbps_dictionary_get_cstring_nocopy(ipkgd, "pkgver", &ipkgver);
 			version = xbps_pkg_version(pkgver);
+			if (!version)
+				xbps_unreachable();
 			iversion = xbps_pkg_version(ipkgver);
+			if (!iversion)
+				xbps_unreachable();
 			buf = xbps_xasprintf("%s (%s -> %s)", pkgname, iversion, version);
 		}
 		if (ttype == tt) {

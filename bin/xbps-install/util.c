@@ -182,8 +182,12 @@ print_trans_colmode(struct transaction *trans, unsigned int cols)
 		if (ipkgd) {
 			xbps_dictionary_get_cstring_nocopy(ipkgd, "pkgver", &ipkgver);
 			iver = xbps_pkg_version(ipkgver);
+			if (!iver)
+				xbps_unreachable();
 		}
 		ver = xbps_pkg_version(pkgver);
+		if (!ver)
+			xbps_unreachable();
 		if (iver) {
 			int rv = xbps_cmpver(iver, ver);
 			if (rv == 1 && ttype != XBPS_TRANS_HOLD)

@@ -99,10 +99,11 @@ state_cb(const struct xbps_state_cb_data *xscd, void *cbdata UNUSED)
 		/* empty */
 		break;
 	case XBPS_STATE_UPDATE:
-		if (!xbps_pkg_name(pkgname, sizeof(pkgname), xscd->arg)) {
-			abort();
-		}
+		if (!xbps_pkg_name(pkgname, sizeof(pkgname), xscd->arg))
+			xbps_unreachable();
 		newver = xbps_pkg_version(xscd->arg);
+		if (!newver)
+			xbps_unreachable();
 		pkgd = xbps_pkgdb_get_pkg(xscd->xhp, pkgname);
 		xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &instver);
 		printf("%s: updating to %s ...\n", instver, newver);

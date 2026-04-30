@@ -584,20 +584,25 @@ xbps_pkg_reverts(xbps_dictionary_t pkg, const char *pkgver)
 {
 	unsigned int i;
 	xbps_array_t reverts;
-	const char *version = xbps_pkg_version(pkgver);
+	const char *version;
 	const char *revertver = NULL;
 
 	assert(pkg);
 	assert(pkgver);
 
-	if ((reverts = xbps_dictionary_get(pkg, "reverts")) == NULL)
+	reverts = xbps_dictionary_get(pkg, "reverts");
+	if (xbps_array_count(reverts) == 0)
 		return false;
 
+	version = xbps_pkg_version(pkgver);
+	if (!version)
+		xbps_unreachable();
+
 	for (i = 0; i < xbps_array_count(reverts); i++) {
-		xbps_array_get_cstring_nocopy(reverts, i, &revertver);
-		if (strcmp(version, revertver) == 0) {
+		if (!xbps_array_get_cstring_nocopy(reverts, i, &revertver))
+			xbps_unreachable();
+		if (strcmp(version, revertver) == 0)
 			return true;
-		}
 	}
 
 	return false;

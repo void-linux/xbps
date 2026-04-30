@@ -99,7 +99,8 @@ xbps_entry_install_conf_file(struct xbps_handle *xhp,
 		 * Install it as file.new-<version>.
 		 */
 		version = xbps_pkg_version(pkgver);
-		assert(version);
+		if (!version)
+			xbps_unreachable();
 		xbps_dbg_printf("%s: conf_file %s not currently "
 		    "installed, renaming to %s.new-%s\n", pkgver,
 		    entry_pname, entry_pname, version);
@@ -227,7 +228,8 @@ xbps_entry_install_conf_file(struct xbps_handle *xhp,
 			    (strcmp(sha256_orig, sha256_new))) ||
 			    (xhp->flags & XBPS_FLAG_KEEP_CONFIG)) {
 			version = xbps_pkg_version(pkgver);
-			assert(version);
+			if (!version)
+				xbps_unreachable();
 			snprintf(buf, sizeof(buf), ".%s.new-%s", cffile, version);
 			xbps_set_cb_state(xhp, XBPS_STATE_CONFIG_FILE,
 			    0, pkgver, "File `%s' exists, installing configuration file to `%s'.", cffile, buf);
