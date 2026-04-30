@@ -65,11 +65,13 @@ xbps_archive_get_file(struct archive *ar, struct archive_entry *entry)
 	for (;;) {
 		ssize_t rd = archive_read_data(ar, buf + used, len - used);
 		if (rd == ARCHIVE_FATAL || rd == ARCHIVE_WARN) {
+			const char *pname = archive_entry_pathname(entry);
+			if (!pname)
+				xbps_unreachable();
 			r = -xbps_archive_errno(ar);
 			xbps_error_printf(
 			    "failed to read archive entry: %s: %s\n",
-			    archive_entry_pathname(entry),
-			    archive_error_string(ar));
+			    pname, archive_error_string(ar));
 			goto err;
 		} else if (rd == ARCHIVE_RETRY) {
 			continue;
@@ -79,11 +81,13 @@ xbps_archive_get_file(struct archive *ar, struct archive_entry *entry)
 			break;
 	}
 	if (used < len) {
+		const char *pname = archive_entry_pathname(entry);
+		if (!pname)
+			xbps_unreachable();
 		r = -EIO;
 		xbps_error_printf(
 		    "failed to read archive entry: %s: could not read enough "
-		    "data: %s\n",
-		    archive_entry_pathname(entry), strerror(-r));
+		    "data: %s\n", pname, strerror(-r));
 		goto err;
 	}
 

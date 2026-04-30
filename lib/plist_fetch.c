@@ -89,6 +89,8 @@ xbps_archive_fetch_file(const char *url, const char *fname)
 		const char *bfile;
 
 		bfile = archive_entry_pathname(entry);
+		if (!bfile)
+			xbps_unreachable();
 		if (bfile[0] == '.')
 			bfile++; /* skip first dot */
 
@@ -139,6 +141,8 @@ xbps_archive_fetch_file_into_fd(const char *url, const char *fname, int fd)
 			break;
 		}
 		bfile = archive_entry_pathname(entry);
+		if (!bfile)
+			xbps_unreachable();
 		if (bfile[0] == '.')
 			bfile++; /* skip first dot */
 

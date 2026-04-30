@@ -163,6 +163,8 @@ unpack_archive(struct xbps_handle *xhp,
 			break;
 
 		entry_pname = archive_entry_pathname(entry);
+		if (!entry_pname)
+			xbps_unreachable();
 
 		if (strcmp("./INSTALL", entry_pname) == 0 ||
 		    strcmp("./REMOVE", entry_pname) == 0 ||
@@ -215,6 +217,8 @@ unpack_archive(struct xbps_handle *xhp,
 			continue;
 
 		entry_pname = archive_entry_pathname(entry);
+		if (!entry_pname)
+			xbps_unreachable();
 		entry_size = archive_entry_size(entry);
 		entry_type = archive_entry_filetype(entry);
 		entry_statp = archive_entry_stat(entry);
@@ -407,6 +411,8 @@ unpack_archive(struct xbps_handle *xhp,
 		 * has been changed it will become a dangling pointer.
 		 */
 		entry_pname = archive_entry_pathname(entry);
+		if (!entry_pname)
+			xbps_unreachable();
 		/*
 		 * Extract entry from archive.
 		 */

@@ -140,6 +140,8 @@ internalize_binpkg(struct xbps_handle *xhp, xbps_dictionary_t pkg_repod)
 			continue;
 
 		entry_pname = archive_entry_pathname(entry);
+		if (!entry_pname)
+			xbps_unreachable();
 
 		if (strcmp("./INSTALL", entry_pname) == 0) {
 			rv = internalize_script(pkg_repod, "install-script", ar, entry);
