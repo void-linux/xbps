@@ -106,9 +106,8 @@ xbps_pkg_exec_buffer(struct xbps_handle *xhp,
 	close(fd);
 
 	/* exec script */
-	if (!xbps_pkg_name(pkgname, sizeof(pkgname), pkgver)) {
-		abort();
-	}
+	if (!xbps_pkg_name(pkgname, sizeof(pkgname), pkgver))
+		xbps_unreachable();
 	version = xbps_pkg_version(pkgver);
 	if (!version)
 		xbps_unreachable();

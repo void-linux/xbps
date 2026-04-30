@@ -118,9 +118,8 @@ xbps_remove_pkg(struct xbps_handle *xhp, const char *pkgver, bool update)
 	assert(xhp);
 	assert(pkgver);
 
-	if (!xbps_pkg_name(pkgname, sizeof(pkgname), pkgver)) {
-		abort();
-	}
+	if (!xbps_pkg_name(pkgname, sizeof(pkgname), pkgver))
+		xbps_unreachable();
 
 	euid = geteuid();
 

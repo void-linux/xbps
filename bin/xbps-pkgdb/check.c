@@ -55,9 +55,8 @@ check_cb(struct xbps_handle *xhp UNUSED,
 	xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 	xbps_verbose_printf("Checking %s ...\n", pkgver);
 
-	if (!xbps_pkg_name(pkgname, sizeof(pkgname), pkgver)) {
-		abort();
-	}
+	if (!xbps_pkg_name(pkgname, sizeof(pkgname), pkgver))
+		xbps_unreachable();
 	if ((rv = check_pkg(xhp, obj, pkgname, ctx->ctr)) != 0)
 		ctx->errors += 1;
 

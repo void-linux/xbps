@@ -280,9 +280,8 @@ xbps_autoupdate(struct xbps_handle *xhp)
 			xbps_array_get_cstring_nocopy(rdeps, i, &curpkgver);
 			xbps_dbg_printf("%s: processing revdep %s\n", __func__, curpkgver);
 
-			if (!xbps_pkg_name(curpkgn, sizeof(curpkgn), curpkgver)) {
-				abort();
-			}
+			if (!xbps_pkg_name(curpkgn, sizeof(curpkgn), curpkgver))
+				xbps_unreachable();
 			rv = trans_find_pkg(xhp, curpkgn, false);
 			xbps_dbg_printf("%s: trans_find_pkg revdep %s: %d\n", __func__, curpkgver, rv);
 			if (rv && rv != ENOENT && rv != EEXIST && rv != ENODEV)

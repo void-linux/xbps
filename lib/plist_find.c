@@ -72,9 +72,8 @@ get_pkg_in_array(xbps_array_t array, const char *str, xbps_trans_type_t tt, bool
 				break;
 			}
 		} else {
-			if (!xbps_pkg_name(pkgname, sizeof(pkgname), pkgver)) {
-				abort();
-			}
+			if (!xbps_pkg_name(pkgname, sizeof(pkgname), pkgver))
+				xbps_unreachable();
 			/* match by pkgname */
 			if (strcmp(pkgname, str) == 0) {
 				found = true;
@@ -240,9 +239,8 @@ vpkg_user_conf(struct xbps_handle *xhp, const char *vpkg)
 		pkg = xbps_string_cstring_nocopy(rpkg);
 
 		if (xbps_pkg_version(vpkg_conf)) {
-			if (!xbps_pkg_name(buf, sizeof(buf), vpkg_conf)) {
-				abort();
-			}
+			if (!xbps_pkg_name(buf, sizeof(buf), vpkg_conf))
+				xbps_unreachable();
 			vpkgname = buf;
 		} else {
 			vpkgname = vpkg_conf;
@@ -309,9 +307,8 @@ xbps_find_virtualpkg_in_conf(struct xbps_handle *xhp,
 		cur = xbps_string_cstring_nocopy(rpkg);
 		assert(cur);
 		if (xbps_pkg_version(vpkg_conf)) {
-			if (!xbps_pkg_name(buf, sizeof(buf), vpkg_conf)) {
-				abort();
-			}
+			if (!xbps_pkg_name(buf, sizeof(buf), vpkg_conf))
+				xbps_unreachable();
 			vpkgname = buf;
 		} else {
 			vpkgname = vpkg_conf;
@@ -333,9 +330,8 @@ xbps_find_virtualpkg_in_conf(struct xbps_handle *xhp,
 			// XXX: this is the old behaviour of only matching pkgname's,
 			// this is kinda wrong when compared to matching patterns
 			// where all variants are tried.
-			if (!xbps_pkg_name(buf, sizeof(buf), pkg)) {
-				abort();
-			}
+			if (!xbps_pkg_name(buf, sizeof(buf), pkg))
+				xbps_unreachable();
 			if (strcmp(buf, vpkgname)) {
 				continue;
 			}

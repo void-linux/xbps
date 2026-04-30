@@ -187,10 +187,9 @@ ordered_depends(struct xbps_handle *xhp, xbps_dictionary_t pkgd, bool rpool,
 			errno = ENODEV;
 			return NULL;
 		}
-		if ((!xbps_pkgpattern_name(curdepname, XBPS_NAME_SIZE, curdep)) &&
-		    (!xbps_pkg_name(curdepname, XBPS_NAME_SIZE, curdep))) {
-			abort();
-		}
+		if (!xbps_pkgpattern_name(curdepname, XBPS_NAME_SIZE, curdep) &&
+		    !xbps_pkg_name(curdepname, XBPS_NAME_SIZE, curdep))
+			xbps_unreachable();
 
 		if (provides && xbps_match_pkgname_in_array(provides, curdepname)) {
 			xbps_dbg_printf("%s: ignoring dependency %s "

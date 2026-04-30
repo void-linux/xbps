@@ -262,9 +262,8 @@ repo_deps(struct xbps_handle *xhp,
 				/*
 				 * The version requirement is not satisfied.
 				 */
-				if (!xbps_pkg_name(curpkgname, sizeof(curpkgname), pkgver_q)) {
-					abort();
-				}
+				if (!xbps_pkg_name(curpkgname, sizeof(curpkgname), pkgver_q))
+					xbps_unreachable();
 
 				if (strcmp(pkgname, curpkgname)) {
 					xbps_dbg_printf_append("not installed `%s (vpkg)'", pkgver_q);
@@ -421,9 +420,8 @@ repo_deps(struct xbps_handle *xhp,
 				case 0: /* nomatch */
 					break;
 				case 1: /* match */
-					if (!xbps_pkg_name(pkgname, sizeof(pkgname), pkgver_q)) {
-						abort();
-					}
+					if (!xbps_pkg_name(pkgname, sizeof(pkgname), pkgver_q))
+						xbps_unreachable();
 					/*
 					 * If there's an update in transaction,
 					 * it's assumed version is greater.

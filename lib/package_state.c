@@ -158,9 +158,8 @@ xbps_set_pkg_state_installed(struct xbps_handle *xhp,
 			xbps_object_release(pkgd);
 			return rv;
 		}
-		if (!xbps_pkg_name(pkgname, XBPS_NAME_SIZE, pkgver)) {
-			abort();
-		}
+		if (!xbps_pkg_name(pkgname, XBPS_NAME_SIZE, pkgver))
+			xbps_unreachable();
 		if (!xbps_dictionary_set(xhp->pkgdb, pkgname, pkgd)) {
 			xbps_object_release(pkgd);
 			return EINVAL;
