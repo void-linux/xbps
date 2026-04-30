@@ -74,8 +74,13 @@ addItem(xbps_array_t rdeps, const char *pkgn, const char *pkgver)
 		return item;
 
 	item = malloc(sizeof(*item));
-	assert(item);
+	if (!item)
+		return NULL;
 	item->pkgn = strdup(pkgn);
+	if (!item->pkgn) {
+		free(item);
+		return NULL;
+	}
 	item->pkgver = pkgver;
 	item->rdeps = rdeps;
 	item->dbase = NULL;
@@ -98,25 +103,33 @@ addDepn(struct item *item, struct item *xitem)
 	xitem->dbase = depn;
 }
 
-static void
+static int
 add_deps_recursive(struct item *item, bool first)
 {
 	struct depn *dep;
 	xbps_string_t str;
 
 	if (xbps_match_string_in_array(result, item->pkgver))
-		return;
+		return 0;
 
-	for (dep = item->dbase; dep; dep = dep->dnext)
-		add_deps_recursive(dep->item, false);
+	for (dep = item->dbase; dep; dep = dep->dnext) {
+		int r = add_deps_recursive(dep->item, false);
+		if (r < 0)
+			return r;
+	}
+
 
 	if (first)
-		return;
+		return 0;
 
 	str = xbps_string_create_cstring(item->pkgver);
-	assert(str);
-	xbps_array_add_first(result, str);
+	if (!str)
+		return xbps_error_oom();
+
+	if (!xbps_array_add_first(result, str))
+		return xbps_error_oom();
 	xbps_object_release(str);
+	return 0;
 }
 
 static void
@@ -154,16 +167,18 @@ ordered_depends(struct xbps_handle *xhp, xbps_dictionary_t pkgd, bool rpool,
 
 	item = lookupItem(pkgname);
 	if (item) {
-		add_deps_recursive(item, depth == 0);
+		int r = add_deps_recursive(item, depth == 0);
+		if (r < 0)
+			return NULL;
 		return item;
 	}
 
-	if (!xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver)) {
-		abort();
-	}
+	if (!xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver))
+		xbps_unreachable();
 
 	item = addItem(rdeps, pkgname, pkgver);
-	assert(item);
+	if (!item)
+		return NULL;
 
 	for (unsigned int i = 0; i < xbps_array_count(rdeps); i++) {
 		xbps_dictionary_t curpkgd;
@@ -202,19 +217,17 @@ ordered_depends(struct xbps_handle *xhp, xbps_dictionary_t pkgd, bool rpool,
 			continue;
 		}
 		xitem = ordered_depends(xhp, curpkgd, rpool, depth+1);
-		if (xitem == NULL) {
-			/* package depends on missing dependencies */
-			xbps_dbg_printf("%s: missing dependency '%s'\n", pkgver, curdep);
-			errno = ENODEV;
+		if (!xitem)
 			return NULL;
-		}
-		assert(xitem);
 		addDepn(item, xitem);
 	}
 	/* all deps were processed, add item to head */
 	if (depth > 0 && !xbps_match_string_in_array(result, item->pkgver)) {
 		str = xbps_string_create_cstring(item->pkgver);
-		assert(str);
+		if (!str) {
+			xbps_error_oom();
+			return NULL;
+		}
 		xbps_array_add_first(result, str);
 		xbps_object_release(str);
 	}
@@ -227,7 +240,10 @@ xbps_get_pkg_fulldeptree(struct xbps_handle *xhp, const char *pkg, bool rpool)
 	xbps_dictionary_t pkgd;
 
 	result = xbps_array_create();
-	assert(result);
+	if (!result) {
+		xbps_error_oom();
+		return NULL;
+	}
 
 	if (rpool) {
 		if (((pkgd = xbps_rpool_get_pkg(xhp, pkg)) == NULL) &&
