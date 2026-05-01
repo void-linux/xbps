@@ -45,6 +45,7 @@ xbps_archive_errno(struct archive *ar)
 char HIDDEN *
 xbps_archive_get_file(struct archive *ar, struct archive_entry *entry)
 {
+	int64_t entry_size;
 	size_t used = 0;
 	size_t len;
 	char *buf;
@@ -53,7 +54,12 @@ xbps_archive_get_file(struct archive *ar, struct archive_entry *entry)
 	assert(ar != NULL);
 	assert(entry != NULL);
 
-	len = archive_entry_size(entry);
+	entry_size = archive_entry_size(entry);
+	if (entry_size < 0 || (uint64_t)entry_size >= SIZE_MAX) {
+		errno = EOVERFLOW;
+		return NULL;
+	}
+	len = entry_size;
 
 	buf = malloc(len + 1);
 	if (!buf) {
