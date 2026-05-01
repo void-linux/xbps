@@ -70,8 +70,7 @@ match_preserved_file(struct xbps_handle *xhp, const char *entry)
 		return false;
 
 	if (entry[0] == '.' && entry[1] != '\0') {
-		file = strchr(entry, '.') + 1;
-		assert(file);
+		file = entry + 1;
 	} else {
 		file = entry;
 	}
@@ -219,6 +218,7 @@ unpack_archive(struct xbps_handle *xhp,
 		entry_pname = archive_entry_pathname(entry);
 		if (!entry_pname)
 			xbps_unreachable();
+
 		entry_size = archive_entry_size(entry);
 		entry_type = archive_entry_filetype(entry);
 		entry_statp = archive_entry_stat(entry);
@@ -229,6 +229,18 @@ unpack_archive(struct xbps_handle *xhp,
 			archive_read_data_skip(ar);
 			continue;
 		}
+
+		/*
+		 * Archive entries have been required to start with ./
+		 * instead of / for a long time, we can enforce it.
+		 */
+		if (entry_pname[0] != '.') {
+			xbps_error_printf("%s: invalid archive entry: %s\n",
+			    pkgver, entry_pname);
+			archive_read_data_skip(ar);
+			continue;
+		}
+
 		/*
 		 * Prepare unpack callback ops.
 		 */
@@ -293,8 +305,7 @@ unpack_archive(struct xbps_handle *xhp,
 		 * that should be kept.
 		 */
 		if (!force && (entry_type == AE_IFREG)) {
-			file = strchr(entry_pname, '.') + 1;
-			assert(file != NULL);
+			file = entry_pname + 1;
 			keep_conf_file = xbps_entry_is_a_conf_file(binpkg_filesd, file);
 		}
 
