@@ -66,6 +66,14 @@ Sets the default cache directory to store downloaded binary packages from
 remote repositories, as well as its signatures.
 If path starts with '/' it's an absolute path, otherwise it will be relative to
 .Ar rootdir .
+.It Sy fetch_jobs=number
+Specifies the number of parallel downloads when fetching binary
+packages from remote repositories.
+The default value is 1, which performs downloads sequentially.
+Increasing this value allows multiple packages to be downloaded
+concurrently and may improve performance on fast network
+connections or high latency networks.
+This option may be overridden by command line options.
 .It Sy ignorepkg=pkgname
 Declares an ignored package.
 If a package depends on an ignored package the dependency is always satisfied,

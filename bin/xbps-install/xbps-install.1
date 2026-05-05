@@ -138,6 +138,13 @@ for in memory sync.
 .Pp
 The output will be a line for each action in the following format:
 .D1 <pkgver> <action> <arch> <repository> <installedsize> <downloadsize>
+.Fl p , Fl -parallel-download
+.Ar jobs
+Set the number of parallel downloads when fetching binary packages
+from remote repositories.  The default value is 1, which performs
+downloads sequentially.  Increasing this value allows multiple
+packages to be downloaded concurrently and may improve performance
+on high bandwidth or high latency connections.
 .It Fl R , Fl -repository Ar url
 Appends the specified repository to the top of the list.
 The
