@@ -23,11 +23,9 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdio.h>
-#include <stdbool.h>
-#include <stdlib.h>
-#include <string.h>
 #include <errno.h>
+#include <stdbool.h>
+#include <string.h>
 
 #include "xbps_api_impl.h"
 
@@ -69,8 +67,11 @@ xbps_find_pkg_orphans(struct xbps_handle *xhp, xbps_array_t orphans_user)
 	if (xbps_pkgdb_init(xhp) != 0)
 		return NULL;
 
-	if ((array = xbps_array_create()) == NULL)
+	array = xbps_array_create();
+	if (!array) {
+		xbps_error_oom();
 		return NULL;
+	}
 
 	if (!orphans_user) {
 		/* automatic mode (xbps-query -O, xbps-remove -o) */
@@ -108,7 +109,10 @@ xbps_find_pkg_orphans(struct xbps_handle *xhp, xbps_array_t orphans_user)
 
 				if (revdepscnt == 0) {
 					added = true;
-					xbps_array_add(array, pkgd);
+					if (!xbps_array_add(array, pkgd)) {
+						xbps_error_oom();
+						goto err;
+					}
 					xbps_dbg_printf(" %s orphan (automatic and !revdeps)\n", pkgver);
 					continue;
 				}
@@ -122,7 +126,10 @@ xbps_find_pkg_orphans(struct xbps_handle *xhp, xbps_array_t orphans_user)
 				}
 				if (cnt == revdepscnt) {
 					added = true;
-					xbps_array_add(array, pkgd);
+					if (!xbps_array_add(array, pkgd)) {
+						xbps_error_oom();
+						goto err;
+					}
 					xbps_dbg_printf(" %s orphan (automatic and all revdeps)\n", pkgver);
 				}
 
@@ -148,7 +155,10 @@ xbps_find_pkg_orphans(struct xbps_handle *xhp, xbps_array_t orphans_user)
 		pkgd = xbps_pkgdb_get_pkg(xhp, pkgver);
 		if (pkgd == NULL)
 			continue;
-		xbps_array_add(array, pkgd);
+		if (!xbps_array_add(array, pkgd)) {
+			xbps_error_oom();
+			goto err;
+		}
 	}
 
 	for (unsigned int i = 0; i < xbps_array_count(array); i++) {
@@ -160,7 +170,13 @@ xbps_find_pkg_orphans(struct xbps_handle *xhp, xbps_array_t orphans_user)
 		pkgd = xbps_array_get(array, i);
 		xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
 		rdeps = xbps_pkgdb_get_pkg_fulldeptree(xhp, pkgver);
+		if (!rdeps) {
+			// XXX: we should probably abort.
+			xbps_error_printf("failed to get reverse dependencies: %s\n", strerror(errno));
+			continue;
+		}
 		if (xbps_array_count(rdeps) == 0) {
+			xbps_object_release(rdeps);
 			continue;
 		}
 
@@ -195,11 +211,18 @@ xbps_find_pkg_orphans(struct xbps_handle *xhp, xbps_array_t orphans_user)
 					cnt++;
 			}
 			if (cnt == reqbycnt) {
-				xbps_array_add(array, deppkgd);
+				if (!xbps_array_add(array, deppkgd)) {
+					xbps_error_oom();
+					goto err;
+				}
 				xbps_dbg_printf(" added %s orphan\n", deppkgver);
 			}
 		}
+		xbps_object_release(rdeps);
 	}
 
 	return array;
+err:
+	xbps_object_release(array);
+	return NULL;
 }

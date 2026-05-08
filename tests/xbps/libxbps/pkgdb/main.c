@@ -66,6 +66,7 @@ ATF_TC_BODY(pkgdb_get_pkg_test, tc)
 	ATF_REQUIRE_EQ(xbps_object_type(pkgd), XBPS_TYPE_DICTIONARY);
 	xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
 	ATF_REQUIRE_STREQ(pkgver, "mixed-0.1_1");
+	xbps_end(&xh);
 }
 
 ATF_TC(pkgdb_get_virtualpkg_test);
@@ -108,6 +109,7 @@ ATF_TC_BODY(pkgdb_get_virtualpkg_test, tc)
 	ATF_REQUIRE_EQ(xbps_object_type(pkgd), XBPS_TYPE_DICTIONARY);
 	xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
 	ATF_REQUIRE_STREQ(pkgver, "virtual-mixed-0.1_1");
+	xbps_end(&xh);
 }
 
 ATF_TC(pkgdb_get_pkg_revdeps_test);
@@ -144,6 +146,8 @@ ATF_TC_BODY(pkgdb_get_pkg_revdeps_test, tc)
 		xbps_string_append_cstring(pstr, "\n");
 	}
 	ATF_REQUIRE_STREQ(xbps_string_cstring_nocopy(pstr), eout);
+	xbps_object_release(pstr);
+	xbps_end(&xh);
 }
 
 ATF_TC(pkgdb_pkg_reverts_test);
@@ -174,6 +178,7 @@ ATF_TC_BODY(pkgdb_pkg_reverts_test, tc)
 	ATF_REQUIRE_EQ(xbps_pkg_reverts(pkgd, "reverts-0.3_1"), 1);
 	ATF_REQUIRE_EQ(xbps_pkg_reverts(pkgd, "reverts-0.4_1"), 1);
 	ATF_REQUIRE_EQ(xbps_pkg_reverts(pkgd, "reverts-0.5_1"), 0);
+	xbps_end(&xh);
 }
 
 ATF_TP_ADD_TCS(tp)

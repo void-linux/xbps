@@ -71,8 +71,8 @@ ATF_TC_BODY(find_pkg_orphans_test, tc)
 	xbps_strlcpy(xh.metadir, tcsdir, sizeof(xh.metadir));
 	ATF_REQUIRE_EQ(xbps_init(&xh), 0);
 
-	a = xbps_array_create();
-	xbps_array_add_cstring_nocopy(a, "xbps-git");
+	ATF_REQUIRE((a = xbps_array_create()));
+	ATF_REQUIRE(xbps_array_add_cstring_nocopy(a, "xbps-git"));
 
 	pstr = xbps_string_create();
 	res = xbps_find_pkg_orphans(&xh, a);
@@ -82,7 +82,11 @@ ATF_TC_BODY(find_pkg_orphans_test, tc)
 		xbps_string_append_cstring(pstr, pkgver);
 		xbps_string_append_cstring(pstr, "\n");
 	}
+	xbps_object_release(a);
+	xbps_object_release(res);
 	ATF_REQUIRE_STREQ(xbps_string_cstring_nocopy(pstr), expected_output);
+	xbps_object_release(pstr);
+	xbps_end(&xh);
 }
 
 ATF_TC(find_all_orphans_test);
@@ -112,13 +116,16 @@ ATF_TC_BODY(find_all_orphans_test, tc)
 	res = xbps_find_pkg_orphans(&xh, NULL);
 	for (i = 0; i < xbps_array_count(res); i++) {
 		pkgd = xbps_array_get(res, i);
-		xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
-		xbps_string_append_cstring(pstr, pkgver);
-		xbps_string_append_cstring(pstr, "\n");
+		ATF_REQUIRE(xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver));
+		ATF_REQUIRE(xbps_string_append_cstring(pstr, pkgver));
+		ATF_REQUIRE(xbps_string_append_cstring(pstr, "\n"));
 	}
 	printf("%s", xbps_string_cstring_nocopy(pstr));
+	xbps_object_release(res);
 
 	ATF_REQUIRE_STREQ(xbps_string_cstring_nocopy(pstr), expected_output_all);
+	xbps_object_release(pstr);
+	xbps_end(&xh);
 }
 
 ATF_TP_ADD_TCS(tp)

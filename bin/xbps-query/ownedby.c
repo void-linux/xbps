@@ -146,14 +146,17 @@ repo_match_cb(struct xbps_handle *xhp,
 
 	r = xbps_pkg_path_or_url(xhp, bfile, sizeof(bfile), obj);
 	if (r < 0) {
-		xbps_error_printf("could not get package path: %s\n", strerror(-r));
-		return -r;
+		return xbps_error_errno(
+		    r, "could not get package path: %s\n", strerror(-r));
 	}
+	errno = 0;
 	filesd = xbps_archive_fetch_plist(bfile, "/files.plist");
 	if (!filesd) {
-		xbps_error_printf("%s: couldn't fetch files.plist from %s: %s\n",
-		    pkgver, bfile, strerror(errno));
-		return EINVAL;
+		if (errno == 0)
+			errno = EINVAL;
+		return xbps_error_errno(errno,
+		    "%s: couldn't fetch files.plist from %s: %s\n", pkgver,
+		    bfile, strerror(errno));
 	}
 	files_keys = xbps_dictionary_all_keys(filesd);
 	for (unsigned int i = 0; i < xbps_array_count(files_keys); i++) {
@@ -175,7 +178,7 @@ repo_ownedby_cb(struct xbps_repo *repo, void *arg, bool *done UNUSED)
 
 	ffd->repouri = repo->uri;
 	allkeys = xbps_dictionary_all_keys(repo->idx);
-	rv = xbps_array_foreach_cb_multi(repo->xhp, allkeys, repo->idx, repo_match_cb, ffd);
+	rv = -xbps_array_foreach_cb_multi(repo->xhp, allkeys, repo->idx, repo_match_cb, ffd);
 	xbps_object_release(allkeys);
 
 	return rv;

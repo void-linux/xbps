@@ -62,10 +62,6 @@ int HIDDEN dewey_match(const char *, const char *);
 int HIDDEN xbps_pkgdb_init(struct xbps_handle *);
 void HIDDEN xbps_pkgdb_release(struct xbps_handle *);
 int HIDDEN xbps_pkgdb_conversion(struct xbps_handle *);
-int HIDDEN xbps_array_replace_dict_by_name(xbps_array_t, xbps_dictionary_t,
-		const char *);
-int HIDDEN xbps_array_replace_dict_by_pattern(xbps_array_t, xbps_dictionary_t,
-		const char *);
 bool HIDDEN xbps_remove_pkg_from_array_by_name(xbps_array_t, const char *);
 bool HIDDEN xbps_remove_pkg_from_array_by_pattern(xbps_array_t, const char *);
 bool HIDDEN xbps_remove_pkg_from_array_by_pkgver(xbps_array_t, const char *);
@@ -88,9 +84,13 @@ xbps_dictionary_t HIDDEN xbps_find_virtualpkg_in_array(struct xbps_handle *,
 /* transaction */
 bool HIDDEN xbps_transaction_check_revdeps(struct xbps_handle *, xbps_array_t);
 bool HIDDEN xbps_transaction_check_shlibs(struct xbps_handle *, xbps_array_t);
-bool HIDDEN xbps_transaction_check_replaces(struct xbps_handle *, xbps_array_t);
+int HIDDEN transaction_check_replaces(
+    struct xbps_handle *xhp, xbps_array_t trans_pkgs);
 int HIDDEN xbps_transaction_check_conflicts(struct xbps_handle *, xbps_array_t);
-bool HIDDEN xbps_transaction_store(struct xbps_handle *, xbps_array_t, xbps_dictionary_t, bool);
+int HIDDEN transaction_store(struct xbps_handle *xhp, xbps_dictionary_t pkgrd,
+    xbps_trans_type_t ttype, bool autoinstall, bool replace);
+int HIDDEN transaction_package_set_action(xbps_dictionary_t pkgd,
+                                          xbps_trans_type_t ttype);
 int HIDDEN xbps_transaction_init(struct xbps_handle *);
 int HIDDEN xbps_transaction_files(struct xbps_handle *,
 		xbps_object_iterator_t);
