@@ -45,6 +45,8 @@ ATF_TC_BODY(cmpver_test, tc)
 	ATF_REQUIRE_EQ(xbps_cmpver("foo-blah-100dpi-21", "foo-blah-100dpi-21_0"), 0);
 	ATF_REQUIRE_EQ(xbps_cmpver("foo-blah-100dpi-21", "foo-blah-100dpi-2.1"), 1);
 	ATF_REQUIRE_EQ(xbps_cmpver("foo-1.0.1", "foo-1.0_1"), 1);
+	ATF_REQUIRE_EQ(xbps_cmpver("foo-1:1.0_1", "foo-2.0_1"), 1);
+	ATF_REQUIRE_EQ(xbps_cmpver("foo-1:1.0_1", "foo-2:0.1_1"), -1);
 }
 
 ATF_TP_ADD_TCS(tp)
