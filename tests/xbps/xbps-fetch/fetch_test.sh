@@ -10,8 +10,7 @@ success_head() {
 success_body() {
 	mkdir some_repo
 	touch some_repo/pkg_A
-	xbps-fetch file://$PWD/some_repo/pkg_A
-	atf_check_equal $? 0
+	atf_check -o ignore -- xbps-fetch file://$PWD/some_repo/pkg_A
 }
 
 atf_test_case pkgnotfound
@@ -21,8 +20,9 @@ pkgnotfound_head() {
 }
 
 pkgnotfound_body() {
-	xbps-fetch file://$PWD/nonexistant
-	atf_check_equal $? 1
+	atf_check -s exit:1 \
+		-e match:"ERROR: xbps-fetch: failed to fetch: file://${PWD}/nonexistant" \
+		-- xbps-fetch file://$PWD/nonexistant
 }
 
 atf_test_case identical
@@ -35,9 +35,9 @@ identical_body() {
 	mkdir some_repo
 	echo 'content' > some_repo/pkg_A
 	echo 'content' > pkg_A
-	output=$(xbps-fetch file://$PWD/some_repo/pkg_A 2>&1)
-	atf_check_equal $? 0
-	atf_check_equal "$output" "WARNING: xbps-fetch: file://$PWD/some_repo/pkg_A: file is identical with remote."
+	atf_check \
+		-e inline:"WARNING: xbps-fetch: file://$PWD/some_repo/pkg_A: file is identical with remote.\n" \
+		-- xbps-fetch file://$PWD/some_repo/pkg_A
 }
 
 atf_test_case multiple_success
@@ -49,12 +49,9 @@ multiple_success_head() {
 multiple_success_body() {
 	mkdir some_repo
 	touch some_repo/pkg_A some_repo/pkg_B
-	xbps-fetch file://$PWD/some_repo/pkg_A file://$PWD/some_repo/pkg_B
-	atf_check_equal $? 0
-	test -f pkg_A
-	atf_check_equal $? 0
-	test -f pkg_B
-	atf_check_equal $? 0
+	atf_check -o ignore -- xbps-fetch file://$PWD/some_repo/pkg_A file://$PWD/some_repo/pkg_B
+	atf_check -- test -f pkg_A
+	atf_check -- test -f pkg_B
 }
 
 atf_test_case multiple_notfound
@@ -66,12 +63,10 @@ multiple_notfound_head() {
 multiple_notfound_body() {
 	mkdir some_repo
 	touch some_repo/pkg_A
-	xbps-fetch file://$PWD/some_repo/nonexistant file://$PWD/some_repo/pkg_A
-	atf_check_equal $? 1
-	test -f pkg_A
-	atf_check_equal $? 0
-	test -f nonexistant
-	atf_check_equal $? 1
+	atf_check -s exit:1 -e match:"failed to fetch" -o ignore \
+		-- xbps-fetch file://$PWD/some_repo/nonexistant file://$PWD/some_repo/pkg_A
+	atf_check -- test -f pkg_A
+	atf_check -s exit:1 -- test -f nonexistant
 }
 
 atf_init_test_cases() {
