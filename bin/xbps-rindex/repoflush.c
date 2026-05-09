@@ -1,6 +1,6 @@
 /*-
  * Copyright (c) 2013-2019 Juan Romero Pardines.
- * Copyright (c) 2023 Duncan Overbruck <mail@duncano.de>.
+ * Copyright (c) 2023-2025 Duncan Overbruck <mail@duncano.de>.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -131,48 +131,17 @@ archive_dict(struct archive *ar, const char *filename, xbps_dictionary_t dict)
 }
 
 int
-repodata_flush(const char *repodir,
-		const char *arch,
-		xbps_dictionary_t index,
-		xbps_dictionary_t stage,
-		xbps_dictionary_t meta,
-		const char *compression)
+repodata_write_fd(int fd, xbps_dictionary_t index, xbps_dictionary_t stage,
+    xbps_dictionary_t meta, const char *compression)
 {
-	char path[PATH_MAX];
-	char tmp[PATH_MAX];
-	struct archive *ar = NULL;
-	mode_t prevumask;
+	struct archive *ar;
 	int r;
-	int fd;
-
-	r = snprintf(path, sizeof(path), "%s/%s-repodata", repodir, arch);
-	if (r < 0 || (size_t)r >= sizeof(tmp)) {
-		xbps_error_printf("repodata path too long: %s: %s\n", path,
-		    strerror(ENAMETOOLONG));
-		return -ENAMETOOLONG;
-	}
-
-	r = snprintf(tmp, sizeof(tmp), "%s.XXXXXXX", path);
-	if (r < 0 || (size_t)r >= sizeof(tmp)) {
-		xbps_error_printf("repodata tmp path too long: %s: %s\n", path,
-		    strerror(ENAMETOOLONG));
-		return -ENAMETOOLONG;
-	}
-
-	prevumask = umask(S_IXUSR|S_IRWXG|S_IRWXO);
-	fd = mkstemp(tmp);
-	if (fd == -1) {
-		r = -errno;
-		xbps_error_printf("failed to open temp file: %s: %s", tmp, strerror(-r));
-		umask(prevumask);
-		goto err;
-	}
-	umask(prevumask);
 
 	ar = open_archive(fd, compression);
 	if (!ar) {
 		r = -errno;
-		goto err;
+		xbps_error_printf("failed to open archive: %s\n", strerror(-r));
+		return r;
 	}
 
 	r = archive_dict(ar, XBPS_REPODATA_INDEX, index);
@@ -185,18 +154,19 @@ repodata_flush(const char *repodir,
 	if (r < 0)
 		goto err;
 
-	/* Write data to tempfile and rename */
 	if (archive_write_close(ar) == ARCHIVE_FATAL) {
 		r = -archive_errno(ar);
-		if (r == 1)
-			r = -EINVAL;
-		xbps_error_printf("failed to close archive: %s\n", archive_error_string(ar));
-		goto err;
+		xbps_error_printf(
+		    "failed to close archive: %s\n", archive_error_string(ar));
+		archive_write_free(ar);
+		return r;
 	}
 	if (archive_write_free(ar) == ARCHIVE_FATAL) {
 		r = -errno;
-		xbps_error_printf("failed to free archive: %s\n", strerror(-r));
-		goto err;
+		xbps_error_printf(
+		    "failed to free archive: %s\n", strerror(-r));
+		archive_write_free(ar);
+		return r;
 	}
 
 #ifdef HAVE_FDATASYNC
@@ -204,6 +174,51 @@ repodata_flush(const char *repodir,
 #else
 	fsync(fd);
 #endif
+	return 0;
+
+err:
+	archive_write_free(ar);
+	return r;
+}
+
+int
+repodata_write_tmpfile(char *path, size_t pathsz, char *tmp, size_t tmpsz,
+    const char *repodir, const char *arch, xbps_dictionary_t index,
+    xbps_dictionary_t stage, xbps_dictionary_t meta, const char *compression)
+{
+	mode_t prevumask;
+	int fd;
+	int r;
+
+	r = snprintf(path, pathsz, "%s/%s-repodata", repodir, arch);
+	if (r < 0 || (size_t)r >= pathsz) {
+		xbps_error_printf("repodata path too long: %s: %s\n", path,
+		    strerror(ENAMETOOLONG));
+		return -ENAMETOOLONG;
+	}
+
+	r = snprintf(tmp, tmpsz, "%s.XXXXXXX", path);
+	if (r < 0 || (size_t)r >= tmpsz) {
+		xbps_error_printf("repodata tmp path too long: %s: %s\n", path,
+		    strerror(ENAMETOOLONG));
+		return -ENAMETOOLONG;
+	}
+
+	prevumask = umask(S_IXUSR|S_IRWXG|S_IRWXO);
+
+	fd = mkstemp(tmp);
+	if (fd == -1) {
+		r = -errno;
+		xbps_error_printf("failed to open temp file: %s: %s", tmp, strerror(-r));
+		umask(prevumask);
+		goto err;
+	}
+
+	umask(prevumask);
+
+	r = repodata_write_fd(fd, index, stage, meta, compression);
+	if (r < 0)
+		goto err;
 
 	if (fchmod(fd, 0664) == -1) {
 		errno = -r;
@@ -215,6 +230,28 @@ repodata_flush(const char *repodir,
 	}
 	close(fd);
 
+	return 0;
+err:
+	if (fd != -1)
+		close(fd);
+	unlink(tmp);
+	return r;
+}
+
+int
+repodata_write_file(const char *repodir, const char *arch,
+    xbps_dictionary_t index, xbps_dictionary_t stage, xbps_dictionary_t meta,
+    const char *compression)
+{
+	char path[PATH_MAX];
+	char tmp[PATH_MAX];
+	int r;
+
+	r = repodata_write_tmpfile(path, sizeof(path), tmp, sizeof(tmp), repodir,
+	    arch, index, stage, meta, compression);
+	if (r < 0)
+		return r;
+
 	if (rename(tmp, path) == -1) {
 		r = -errno;
 		xbps_error_printf("failed to rename repodata: %s: %s: %s\n",
@@ -222,15 +259,6 @@ repodata_flush(const char *repodir,
 		unlink(tmp);
 		return r;
 	}
-	return 0;
 
-err:
-	if (ar) {
-		archive_write_close(ar);
-		archive_write_free(ar);
-	}
-	if (fd != -1)
-		close(fd);
-	unlink(tmp);
-	return r;
+	return 0;
 }
