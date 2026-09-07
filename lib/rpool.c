@@ -215,7 +215,20 @@ find_pkg_revdeps_cb(struct xbps_repo *repo, void *arg, bool *done UNUSED)
 		if (rpf->revdeps == NULL)
 			rpf->revdeps = xbps_array_create();
 		for (unsigned int i = 0; i < xbps_array_count(revdeps); i++) {
+			xbps_dictionary_t pkgd;
+			const char *repouri;
+			char pkgname[XBPS_NAME_SIZE];
+
 			xbps_array_get_cstring_nocopy(revdeps, i, &pkgver);
+			if (!xbps_pkg_name(pkgname, sizeof(pkgname), pkgver))
+				abort();
+			/* Ignore reverse dependencies overridden by another repository. */
+			pkgd = xbps_rpool_get_pkg(repo->xhp, pkgname);
+			if (pkgd == NULL ||
+			    !xbps_dictionary_get_cstring_nocopy(pkgd, "repository", &repouri) ||
+			    strcmp(repouri, repo->uri) != 0)
+				continue;
+
 			xbps_array_add_cstring_nocopy(rpf->revdeps, pkgver);
 		}
 		xbps_object_release(revdeps);
