@@ -18,7 +18,7 @@
  *
  * http://www.apple.com/DTDs/PropertyList-1.0.dtd
  *
- * NetBSD's proplib has been choosed because it's fast, extensible, and easy
+ * NetBSD's proplib has been chosen because it's fast, extensible, and easy
  * to use. These are the three facts I mentioned:
  *
  *  - <b>Fast</b> because proplib uses an ultra optimized

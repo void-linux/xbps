@@ -818,7 +818,7 @@ xbps_repo_key_import(struct xbps_repo *repo)
 		goto out;
 	}
 	/*
-	 * Check if the public key is alredy stored.
+	 * Check if the public key is already stored.
 	 */
 	rkeyfile = xbps_xasprintf("%s/keys/%s.plist", repo->xhp->metadir, hexfp);
 	repokeyd = xbps_plist_dictionary_from_file(rkeyfile);
@@ -827,7 +827,7 @@ xbps_repo_key_import(struct xbps_repo *repo)
 		goto out;
 	}
 	/*
-	 * Notify the client and take appropiate action to import
+	 * Notify the client and take appropriate action to import
 	 * the repository public key. Pass back the public key openssh fingerprint
 	 * to the client.
 	 */

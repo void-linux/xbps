@@ -106,7 +106,7 @@ repodata_commit(const char *repodir, const char *repoarch,
 	xbps_object_iterator_release(iter);
 
 	/*
-	 * purge all packages that are fullfilled by the index and
+	 * purge all packages that are fulfilled by the index and
 	 * not in the stage.
 	 */
 	iter = xbps_dictionary_iterator(index);
@@ -130,7 +130,7 @@ repodata_commit(const char *repodir, const char *repoarch,
 	xbps_object_iterator_release(iter);
 
 	/*
-	 * purge all packages that are fullfilled by the stage
+	 * purge all packages that are fulfilled by the stage
 	 */
 	iter = xbps_dictionary_iterator(stage);
 	while ((keysym = xbps_object_iterator_next(iter))) {

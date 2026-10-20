@@ -203,7 +203,7 @@ clean_cache_installed_body() {
 atf_test_case remove_msg
 
 remove_msg_head() {
-	atf_set "descr" "xbps-rmeove(1): show remove message"
+	atf_set "descr" "xbps-remove(1): show remove message"
 }
 
 remove_msg_body() {

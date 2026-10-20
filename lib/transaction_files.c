@@ -112,7 +112,7 @@ addItem(const char *file)
 
 	/*
 	 * File paths are stored relative, but looked up absolute.
-	 * Skip the leading . (dot) and substract it from the length.
+	 * Skip the leading . (dot) and subtract it from the length.
 	 */
 	HASH_ADD_KEYPTR(hh, hashtab, item->file+1, item->len-1, item);
 
