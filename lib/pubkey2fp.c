@@ -1,5 +1,5 @@
 /*
- * An implementation of convertion from OpenSSL to OpenSSH public key format
+ * An implementation of conversion from OpenSSL to OpenSSH public key format
  *
  * Copyright (c) 2008 Mounir IDRASSI <mounir.idrassi@idrix.fr>. All rights reserved.
  *

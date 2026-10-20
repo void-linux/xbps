@@ -400,11 +400,11 @@ ftw_cb(const char *fpath, const struct stat *sb, const struct dirent *dir UNUSED
 	if (xe == NULL)
 		die("calloc");
 
-	/* XXX: fileinfo contains the sanatized path, whereas xe contains the
-	 * unsanatized path!
+	/* XXX: fileinfo contains the sanitized path, whereas xe contains the
+	 * unsanitized path!
 	 *
 	 * when handing the files over, do not use the dictionary directly. Instead
-	 * use the keysym, as this value has the unsanatized path.
+	 * use the keysym, as this value has the unsanitized path.
 	 */
 	xbps_dictionary_set_cstring(fileinfo, "file", filep);
 	xbps_dictionary_set(all_filesd, fpath, fileinfo);

@@ -38,7 +38,7 @@
  * @defgroup configure Package configuration functions
  *
  * Configure a package or all packages. Only packages in XBPS_PKG_STATE_UNPACKED
- * state will be processed (unless overriden). Package configuration steps:
+ * state will be processed (unless overridden). Package configuration steps:
  *  - Its <b>post-install</b> target in the INSTALL script will be executed.
  *  - Its state will be changed to XBPS_PKG_STATE_INSTALLED if previous step
  *    ran successful.

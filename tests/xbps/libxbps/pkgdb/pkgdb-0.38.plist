@@ -13,7 +13,7 @@
 			<string>mixed-0.1_1</string>
 		</array>
 		<key>short_desc</key>
-		<string>four descriptionm</string>
+		<string>four description</string>
 		<key>state</key>
 		<string>installed</string>
 	</dict>
@@ -39,7 +39,7 @@
 			<string>two&gt;=0.2</string>
 		</array>
 		<key>short_desc</key>
-		<string>one descriptionm</string>
+		<string>one description</string>
 		<key>state</key>
 		<string>installed</string>
 	</dict>
@@ -54,7 +54,7 @@
 			<string>four-0.1_1</string>
 		</array>
 		<key>short_desc</key>
-		<string>three descriptionm</string>
+		<string>three description</string>
 		<key>state</key>
 		<string>installed</string>
 	</dict>
@@ -70,7 +70,7 @@
 			<string>mixed&gt;=0</string>
 		</array>
 		<key>short_desc</key>
-		<string>two descriptionm</string>
+		<string>two description</string>
 		<key>state</key>
 		<string>installed</string>
 	</dict>
@@ -106,7 +106,7 @@
 			<string>0.4_1</string>
 		</array>
 		<key>short_desc</key>
-		<string>two descriptionm</string>
+		<string>two description</string>
 		<key>state</key>
 		<string>installed</string>
 	</dict>

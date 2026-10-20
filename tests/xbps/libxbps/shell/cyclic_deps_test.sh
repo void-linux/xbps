@@ -105,7 +105,7 @@ cyclic_dep_full_body() {
 atf_test_case cyclic_dep_of_dep
 
 cyclic_dep_of_dep_head() {
-	atf_set "descr" "Tests for cyclic deps: installing cylic deps directly and indirectly"
+	atf_set "descr" "Tests for cyclic deps: installing cyclic deps directly and indirectly"
 }
 
 cyclic_dep_of_dep_body() {
@@ -136,7 +136,7 @@ cyclic_dep_of_dep_body() {
 atf_test_case cyclic_dep_update
 
 cyclic_dep_update_head() {
-	atf_set "descr" "Tests for cyclic deps: test cylic deps during updates"
+	atf_set "descr" "Tests for cyclic deps: test cyclic deps during updates"
 }
 
 cyclic_dep_update_body() {
@@ -198,7 +198,7 @@ cyclic_dep_update_body() {
 		-o match:"systemd-2\.0_1 update" \
 		-- xbps-install -r root -R repo -n -u systemd
 		# XXX: xbps automatically updates revdeps...
-		# -o not-match:"base-system-3\.0_1 update" 
+		# -o not-match:"base-system-3\.0_1 update"
 
 	atf_check \
 		-o match:"base-system-3\.0_1 update" \

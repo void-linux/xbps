@@ -21,7 +21,7 @@ pkgnotfound_head() {
 }
 
 pkgnotfound_body() {
-	xbps-fetch file://$PWD/nonexistant
+	xbps-fetch file://$PWD/nonexistent
 	atf_check_equal $? 1
 }
 
@@ -66,11 +66,11 @@ multiple_notfound_head() {
 multiple_notfound_body() {
 	mkdir some_repo
 	touch some_repo/pkg_A
-	xbps-fetch file://$PWD/some_repo/nonexistant file://$PWD/some_repo/pkg_A
+	xbps-fetch file://$PWD/some_repo/nonexistent file://$PWD/some_repo/pkg_A
 	atf_check_equal $? 1
 	test -f pkg_A
 	atf_check_equal $? 0
-	test -f nonexistant
+	test -f nonexistent
 	atf_check_equal $? 1
 }
 
