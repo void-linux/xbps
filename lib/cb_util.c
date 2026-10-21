@@ -23,6 +23,7 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <pthread.h>
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -30,6 +31,8 @@
 #include <stdarg.h>
 
 #include "xbps_api_impl.h"
+
+static pthread_mutex_t fetch_cb_lock = PTHREAD_MUTEX_INITIALIZER;
 
 void HIDDEN
 xbps_set_cb_fetch(struct xbps_handle *xhp,
@@ -54,7 +57,10 @@ xbps_set_cb_fetch(struct xbps_handle *xhp,
 	xfcd.cb_start = cb_start;
 	xfcd.cb_update = cb_update;
 	xfcd.cb_end = cb_end;
+
+	pthread_mutex_lock(&fetch_cb_lock);
 	(*xhp->fetch_cb)(&xfcd, xhp->fetch_cb_data);
+	pthread_mutex_unlock(&fetch_cb_lock);
 }
 
 int HIDDEN PRINTF_LIKE(5, 6)

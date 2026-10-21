@@ -26,11 +26,22 @@
 
 #include <errno.h>
 #include <limits.h>
+#include <pthread.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
 #include "xbps_api_impl.h"
 #include "fetch.h"
+
+struct fetch_task {
+	struct xbps_handle *xhp;
+	xbps_array_t fetch;
+	unsigned int index;
+	unsigned int count;
+	pthread_mutex_t lock;
+	int rv;
+};
 
 static int
 verify_binpkg(struct xbps_handle *xhp, xbps_dictionary_t pkgd)
@@ -193,6 +204,40 @@ download_binpkg(struct xbps_handle *xhp, xbps_dictionary_t repo_pkgd)
 	return rv;
 }
 
+
+static void *
+fetch_worker(void *arg)
+{
+	struct fetch_task *task = arg;
+	while (1) {
+		xbps_dictionary_t pkgd;
+		int r;
+
+		pthread_mutex_lock(&task->lock);
+
+		if (task->index >= task->count) {
+			pthread_mutex_unlock(&task->lock);
+			break;
+		}
+
+		pkgd = xbps_array_get(task->fetch, task->index);
+		task->index++;
+
+		pthread_mutex_unlock(&task->lock);
+
+		r = download_binpkg(task->xhp, pkgd);
+		if (r != 0) {
+			pthread_mutex_lock(&task->lock);
+			if (task->rv == 0)
+				task->rv = r;
+			pthread_mutex_unlock(&task->lock);
+			break;
+		}
+	}
+	return NULL;
+}
+
+
 int
 xbps_transaction_fetch(struct xbps_handle *xhp, xbps_object_iterator_t iter)
 {
@@ -202,6 +247,10 @@ xbps_transaction_fetch(struct xbps_handle *xhp, xbps_object_iterator_t iter)
 	const char *repoloc;
 	int rv = 0;
 	unsigned int i, n;
+
+	long cpus = sysconf(_SC_NPROCESSORS_ONLN);
+	unsigned int jobs;
+
 
 	xbps_object_iterator_reset(iter);
 
@@ -242,15 +291,76 @@ xbps_transaction_fetch(struct xbps_handle *xhp, xbps_object_iterator_t iter)
 	 * Download binary packages (if they come from a remote repository)
 	 * and don't exist already.
 	 */
+	if (fetch == NULL)
+		goto out;
+
 	n = xbps_array_count(fetch);
 	if (n) {
 		xbps_set_cb_state(xhp, XBPS_STATE_TRANS_DOWNLOAD, 0, NULL, NULL);
 		xbps_dbg_printf("[trans] downloading %d packages.\n", n);
 	}
-	for (i = 0; i < n; i++) {
-		if ((rv = download_binpkg(xhp, xbps_array_get(fetch, i))) != 0) {
-			xbps_dbg_printf("[trans] failed to download binpkgs: "
-				"%s\n", strerror(rv));
+
+	jobs = xhp->fetch_jobs;
+
+	/* Don't spawn more workers than packages */
+	if (jobs > n)
+	    jobs = n;
+
+	if (cpus < 1)
+		cpus = 1;
+
+	/* Limit workers to a reasonable multiple of CPU cores */
+	if (jobs > cpus * 2)
+		jobs = cpus * 2;
+
+	/* Fallback to serial download when parallelism is unnecessary */
+	if (jobs <= 1 || n <= 1) {
+		for (i = 0; i < n; i++) {
+			if ((rv = download_binpkg(xhp, xbps_array_get(fetch, i))) != 0) {
+				xbps_dbg_printf("[trans] failed to download binpkgs: %s\n",
+				    strerror(rv));
+				goto out;
+			}
+		}
+	} else {
+		pthread_t *th;
+		struct fetch_task task;
+		unsigned int created = 0;
+
+		th = calloc(jobs, sizeof(*th));
+		if (th == NULL) {
+			rv = errno;
+			goto out;
+		}
+
+		task.xhp = xhp;
+		task.fetch = fetch;
+		task.index = 0;
+		task.count = n;
+		task.rv = 0;
+
+		if (pthread_mutex_init(&task.lock, NULL) != 0) {
+			rv = errno;
+			free(th);
+			goto out;
+		}
+
+		for (i = 0; i < jobs; i++) {
+			if (pthread_create(&th[i], NULL, fetch_worker, &task) != 0) {
+				rv = errno;
+				break;
+			}
+			created++;
+		}
+
+		for (i = 0; i < created; i++)
+			pthread_join(th[i], NULL);
+
+		pthread_mutex_destroy(&task.lock);
+		free(th);
+
+		if (task.rv != 0) {
+			rv = task.rv;
 			goto out;
 		}
 	}
