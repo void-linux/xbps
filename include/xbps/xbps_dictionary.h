@@ -33,8 +33,10 @@
 #define	_XBPS_DICTIONARY_H_
 
 #include <stdint.h>
-#include <xbps/xbps_object.h>
+
+#include <xbps/macro.h>
 #include <xbps/xbps_array.h>
+#include <xbps/xbps_object.h>
 
 typedef struct _prop_dictionary *xbps_dictionary_t;
 typedef struct _prop_dictionary_keysym *xbps_dictionary_keysym_t;
@@ -78,12 +80,9 @@ xbps_dictionary_t xbps_dictionary_internalize(const char *);
 
 bool		xbps_dictionary_externalize_to_file(xbps_dictionary_t,
 						    const char *);
-bool		xbps_dictionary_externalize_to_zfile(xbps_dictionary_t,
-						     const char *);
 xbps_dictionary_t xbps_dictionary_internalize_from_file(const char *);
-xbps_dictionary_t xbps_dictionary_internalize_from_zfile(const char *);
 
-const char *	xbps_dictionary_keysym_cstring_nocopy(xbps_dictionary_keysym_t);
+const char *	xbps_dictionary_keysym_value(xbps_dictionary_keysym_t k);
 
 bool		xbps_dictionary_keysym_equals(xbps_dictionary_keysym_t,
 					      xbps_dictionary_keysym_t);
@@ -98,6 +97,60 @@ bool		xbps_dictionary_get_bool(xbps_dictionary_t, const char *,
 					 bool *);
 bool		xbps_dictionary_set_bool(xbps_dictionary_t, const char *,
 					 bool);
+
+bool		xbps_dictionary_get_schar(xbps_dictionary_t, const char *,
+					  signed char *);
+bool		xbps_dictionary_get_uchar(xbps_dictionary_t, const char *,
+					  unsigned char *);
+bool		xbps_dictionary_set_schar(xbps_dictionary_t, const char *,
+					  signed char);
+bool		xbps_dictionary_set_uchar(xbps_dictionary_t, const char *,
+					  unsigned char);
+
+bool		xbps_dictionary_get_short(xbps_dictionary_t, const char *,
+					  short *);
+bool		xbps_dictionary_get_ushort(xbps_dictionary_t, const char *,
+					   unsigned short *);
+bool		xbps_dictionary_set_short(xbps_dictionary_t, const char *,
+					  short);
+bool		xbps_dictionary_set_ushort(xbps_dictionary_t, const char *,
+					   unsigned short);
+
+bool		xbps_dictionary_get_int(xbps_dictionary_t, const char *,
+					int *);
+bool		xbps_dictionary_get_uint(xbps_dictionary_t, const char *,
+					 unsigned int *);
+bool		xbps_dictionary_set_int(xbps_dictionary_t, const char *,
+					int);
+bool		xbps_dictionary_set_uint(xbps_dictionary_t, const char *,
+					 unsigned int);
+
+bool		xbps_dictionary_get_long(xbps_dictionary_t, const char *,
+					 long *);
+bool		xbps_dictionary_get_ulong(xbps_dictionary_t, const char *,
+					  unsigned long *);
+bool		xbps_dictionary_set_long(xbps_dictionary_t, const char *,
+					 long);
+bool		xbps_dictionary_set_ulong(xbps_dictionary_t, const char *,
+					  unsigned long);
+
+bool		xbps_dictionary_get_longlong(xbps_dictionary_t, const char *,
+					     long long *);
+bool		xbps_dictionary_get_ulonglong(xbps_dictionary_t, const char *,
+					      unsigned long long *);
+bool		xbps_dictionary_set_longlong(xbps_dictionary_t, const char *,
+					     long long);
+bool		xbps_dictionary_set_ulonglong(xbps_dictionary_t, const char *,
+					      unsigned long long );
+
+bool		xbps_dictionary_get_intptr(xbps_dictionary_t, const char *,
+					   intptr_t *);
+bool		xbps_dictionary_get_uintptr(xbps_dictionary_t, const char *,
+					    uintptr_t *);
+bool		xbps_dictionary_set_intptr(xbps_dictionary_t, const char *,
+					   intptr_t);
+bool		xbps_dictionary_set_uintptr(xbps_dictionary_t, const char *,
+					    uintptr_t);
 
 bool		xbps_dictionary_get_int8(xbps_dictionary_t, const char *,
 					 int8_t *);
@@ -135,20 +188,38 @@ bool		xbps_dictionary_set_int64(xbps_dictionary_t, const char *,
 bool		xbps_dictionary_set_uint64(xbps_dictionary_t, const char *,
 					   uint64_t);
 
+bool		xbps_dictionary_get_string(xbps_dictionary_t, const char *,
+					   const char **cpp);
+bool		xbps_dictionary_set_string(xbps_dictionary_t, const char *,
+					   const char *);
+bool		xbps_dictionary_set_string_nocopy(xbps_dictionary_t,
+						  const char *, const char *);
+
+bool		xbps_dictionary_get_data(xbps_dictionary_t, const char *,
+					 const void **, size_t *);
+bool		xbps_dictionary_set_data(xbps_dictionary_t, const char *,
+					 const void *, size_t);
+bool		xbps_dictionary_set_data_nocopy(xbps_dictionary_t, const char *,
+					 const void *, size_t);
+
+bool		xbps_dictionary_set_and_rel(xbps_dictionary_t,
+						   const char *,
+						   xbps_object_t);
+
+/* Deprecated functions. */
 bool		xbps_dictionary_get_cstring(xbps_dictionary_t, const char *,
-					     char **);
+					     char **) DEPRECATED;
 bool		xbps_dictionary_set_cstring(xbps_dictionary_t, const char *,
-					    const char *);
+					    const char *) DEPRECATED;
 
 bool		xbps_dictionary_get_cstring_nocopy(xbps_dictionary_t,
 						   const char *,
-						   const char **);
+						   const char **) DEPRECATED;
 bool		xbps_dictionary_set_cstring_nocopy(xbps_dictionary_t,
 						   const char *,
-						   const char *);
-bool		xbps_dictionary_set_and_rel(xbps_dictionary_t,
-					    const char *,
-					    xbps_object_t);
+						   const char *) DEPRECATED;
+
+const char *	xbps_dictionary_keysym_cstring_nocopy(xbps_dictionary_keysym_t) DEPRECATED;
 
 #ifdef __cplusplus
 }

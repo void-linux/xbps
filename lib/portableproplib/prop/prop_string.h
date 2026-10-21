@@ -1,7 +1,7 @@
-/*	$NetBSD: prop_string.h,v 1.3 2008/04/28 20:22:51 martin Exp $	*/
+/*	$NetBSD: prop_string.h,v 1.4 2020/06/06 21:25:59 thorpej Exp $	*/
 
 /*-
- * Copyright (c) 2006 The NetBSD Foundation, Inc.
+ * Copyright (c) 2006, 2020 The NetBSD Foundation, Inc.
  * All rights reserved.
  *
  * This code is derived from software contributed to The NetBSD Foundation
@@ -32,9 +32,15 @@
 #ifndef _PROPLIB_PROP_STRING_H_
 #define	_PROPLIB_PROP_STRING_H_
 
-#include <stdint.h>
+#include <stdarg.h>
+
 #include <prop/prop_object.h>
-#include <sys/types.h>
+
+#if __has_attribute(format)
+# define PRINTF_LIKE(a, b) __attribute__ ((format (printf, a, b)))
+#else
+# define PRINTF_LIKE(a, b) /* printflike */
+#endif
 
 typedef struct _prop_string *prop_string_t;
 
@@ -42,24 +48,39 @@ typedef struct _prop_string *prop_string_t;
 extern "C" {
 #endif
 
+prop_string_t	prop_string_create_vformat(const char *, va_list) PRINTF_LIKE(1, 0);
+prop_string_t	prop_string_create_format(const char *, ...) PRINTF_LIKE(1, 2);
+prop_string_t	prop_string_create_copy(const char *);
+prop_string_t	prop_string_create_nocopy(const char *);
+
+prop_string_t	prop_string_copy(prop_string_t);
+bool		prop_string_copy_value(prop_string_t, void *, size_t);
+
+size_t		prop_string_size(prop_string_t);
+const char *	prop_string_value(prop_string_t);
+
+bool		prop_string_equals(prop_string_t, prop_string_t);
+bool		prop_string_equals_string(prop_string_t, const char *);
+int		prop_string_compare(prop_string_t, prop_string_t);
+int		prop_string_compare_string(prop_string_t, const char *);
+
+
+/* Deprecated functions. */
 prop_string_t	prop_string_create(void);
 prop_string_t	prop_string_create_cstring(const char *);
 prop_string_t	prop_string_create_cstring_nocopy(const char *);
 
-prop_string_t	prop_string_copy(prop_string_t);
 prop_string_t	prop_string_copy_mutable(prop_string_t);
-
-size_t		prop_string_size(prop_string_t);
-bool		prop_string_mutable(prop_string_t);
 
 char *		prop_string_cstring(prop_string_t);
 const char *	prop_string_cstring_nocopy(prop_string_t);
 
+bool		prop_string_mutable(prop_string_t);
+
+bool		prop_string_equals_cstring(prop_string_t, const char *);
+
 bool		prop_string_append(prop_string_t, prop_string_t);
 bool		prop_string_append_cstring(prop_string_t, const char *);
-
-bool		prop_string_equals(prop_string_t, prop_string_t);
-bool		prop_string_equals_cstring(prop_string_t, const char *);
 
 #ifdef __cplusplus
 }

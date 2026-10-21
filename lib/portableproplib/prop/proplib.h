@@ -1,4 +1,4 @@
-/*	$NetBSD: proplib.h,v 1.6 2008/04/28 20:22:51 martin Exp $	*/
+/*	$NetBSD: proplib.h,v 1.7 2009/09/13 18:45:10 pooka Exp $	*/
 
 /*-
  * Copyright (c) 2006 The NetBSD Foundation, Inc.
@@ -32,14 +32,13 @@
 #ifndef _PROPLIB_PROPLIB_H_
 #define	_PROPLIB_PROPLIB_H_
 
-#include <stdint.h>
-
 #include <prop/prop_array.h>
 #include <prop/prop_bool.h>
 #include <prop/prop_data.h>
 #include <prop/prop_dictionary.h>
 #include <prop/prop_number.h>
 #include <prop/prop_string.h>
+
 #include <prop/prop_ingest.h>
 
 #endif /* _PROPLIB_PROPLIB_H_ */

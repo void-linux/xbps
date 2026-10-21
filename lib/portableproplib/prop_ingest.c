@@ -1,4 +1,4 @@
-/*	$NetBSD: prop_ingest.c,v 1.5 2014/09/05 05:19:24 matt Exp $	*/
+/*	$NetBSD: prop_ingest.c,v 1.6 2025/04/26 17:13:23 thorpej Exp $	*/
 
 /*-
  * Copyright (c) 2006 The NetBSD Foundation, Inc.
@@ -43,7 +43,7 @@ struct _prop_ingest_context {
  * prop_ingest_context_alloc --
  *	Allocate and initialize an ingest context.
  */
-prop_ingest_context_t
+_PROP_EXPORT prop_ingest_context_t
 prop_ingest_context_alloc(void *xprivate)
 {
 	prop_ingest_context_t ctx;
@@ -62,7 +62,7 @@ prop_ingest_context_alloc(void *xprivate)
  * prop_ingest_context_free --
  *	Free an ingest context.
  */
-void
+_PROP_EXPORT void
 prop_ingest_context_free(prop_ingest_context_t ctx)
 {
 
@@ -73,7 +73,7 @@ prop_ingest_context_free(prop_ingest_context_t ctx)
  * prop_ingest_context_error --
  *	Get the error code from an ingest context.
  */
-prop_ingest_error_t
+_PROP_EXPORT prop_ingest_error_t
 prop_ingest_context_error(prop_ingest_context_t ctx)
 {
 
@@ -84,7 +84,7 @@ prop_ingest_context_error(prop_ingest_context_t ctx)
  * prop_ingest_context_type --
  *	Return the type of last object visisted by an ingest context.
  */
-prop_type_t
+_PROP_EXPORT prop_type_t
 prop_ingest_context_type(prop_ingest_context_t ctx)
 {
 
@@ -95,7 +95,7 @@ prop_ingest_context_type(prop_ingest_context_t ctx)
  * prop_ingest_context_key --
  *	Return the last key looked up by an ingest context.
  */
-const char *
+_PROP_EXPORT const char *
 prop_ingest_context_key(prop_ingest_context_t ctx)
 {
 
@@ -106,7 +106,7 @@ prop_ingest_context_key(prop_ingest_context_t ctx)
  * prop_ingest_context_private --
  *	Return the caller-private data associated with an ingest context.
  */
-void *
+_PROP_EXPORT void *
 prop_ingest_context_private(prop_ingest_context_t ctx)
 {
 
@@ -118,7 +118,7 @@ prop_ingest_context_private(prop_ingest_context_t ctx)
  *	Ingest a dictionary using handlers for each object to translate
  *	into an arbitrary binary format.
  */
-bool
+_PROP_EXPORT bool
 prop_dictionary_ingest(prop_dictionary_t dict,
 		       const prop_ingest_table_entry rules[],
 		       prop_ingest_context_t ctx)

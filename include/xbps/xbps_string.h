@@ -32,34 +32,60 @@
 #ifndef _XBPS_STRING_H_
 #define	_XBPS_STRING_H_
 
-#include <stdint.h>
 #include <sys/types.h>
+
+#include <stdarg.h>
+#include <stdint.h>
+
+#include <xbps/macro.h>
 #include <xbps/xbps_object.h>
 
 typedef struct _prop_string *xbps_string_t;
+
+#ifndef PRINT_FLIKE
+# if __has_attribute(format)
+#  define PRINTF_LIKE(a, b) __attribute__ ((format (printf, a, b)))
+# else
+#  define PRINTF_LIKE(a, b) /* printflike */
+# endif
+#endif
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-xbps_string_t	xbps_string_create(void);
-xbps_string_t	xbps_string_create_cstring(const char *);
-xbps_string_t	xbps_string_create_cstring_nocopy(const char *);
+xbps_string_t	xbps_string_create_vformat(const char *, va_list);
+xbps_string_t	xbps_string_create_format(const char *, ...) PRINTF_LIKE(1, 2);
+xbps_string_t	xbps_string_create_copy(const char *);
+xbps_string_t	xbps_string_create_nocopy(const char *);
 
 xbps_string_t	xbps_string_copy(xbps_string_t);
-xbps_string_t	xbps_string_copy_mutable(xbps_string_t);
+bool		xbps_string_copy_value(xbps_string_t, void *, size_t);
 
 size_t		xbps_string_size(xbps_string_t);
-bool		xbps_string_mutable(xbps_string_t);
-
-char *		xbps_string_cstring(xbps_string_t);
-const char *	xbps_string_cstring_nocopy(xbps_string_t);
-
-bool		xbps_string_append(xbps_string_t, xbps_string_t);
-bool		xbps_string_append_cstring(xbps_string_t, const char *);
+const char *	xbps_string_value(xbps_string_t);
 
 bool		xbps_string_equals(xbps_string_t, xbps_string_t);
-bool		xbps_string_equals_cstring(xbps_string_t, const char *);
+bool		xbps_string_equals_string(xbps_string_t, const char *);
+int		xbps_string_compare(xbps_string_t, xbps_string_t);
+int		xbps_string_compare_string(xbps_string_t, const char *);
+
+/* Deprecated functions. */
+xbps_string_t	xbps_string_create(void) DEPRECATED;
+xbps_string_t	xbps_string_create_cstring(const char *) DEPRECATED;
+xbps_string_t	xbps_string_create_cstring_nocopy(const char *) DEPRECATED;
+
+xbps_string_t	xbps_string_copy_mutable(xbps_string_t) DEPRECATED;
+
+bool		xbps_string_mutable(xbps_string_t) DEPRECATED;
+
+char *		xbps_string_cstring(xbps_string_t) DEPRECATED;
+const char *	xbps_string_cstring_nocopy(xbps_string_t) DEPRECATED;
+
+bool		xbps_string_append(xbps_string_t, xbps_string_t) DEPRECATED;
+bool		xbps_string_append_cstring(xbps_string_t, const char *) DEPRECATED;
+
+bool		xbps_string_equals_cstring(xbps_string_t, const char *) DEPRECATED;
 
 #ifdef __cplusplus
 }

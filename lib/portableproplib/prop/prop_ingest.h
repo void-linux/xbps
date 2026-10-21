@@ -32,7 +32,6 @@
 #ifndef _PROPLIB_PROP_INGEST_H_
 #define	_PROPLIB_PROP_INGEST_H_
 
-#include <prop/prop_object.h>
 #include <prop/prop_dictionary.h>
 
 typedef enum {

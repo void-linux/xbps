@@ -1,7 +1,7 @@
-/*	$NetBSD: prop_dictionary.h,v 1.9 2008/04/28 20:22:51 martin Exp $	*/
+/*	$NetBSD: prop_dictionary.h,v 1.17 2020/06/06 21:25:59 thorpej Exp $	*/
 
 /*-
- * Copyright (c) 2006 The NetBSD Foundation, Inc.
+ * Copyright (c) 2006, 2009, 2020 The NetBSD Foundation, Inc.
  * All rights reserved.
  *
  * This code is derived from software contributed to The NetBSD Foundation
@@ -32,7 +32,6 @@
 #ifndef _PROPLIB_PROP_DICTIONARY_H_
 #define	_PROPLIB_PROP_DICTIONARY_H_
 
-#include <stdint.h>
 #include <prop/prop_object.h>
 #include <prop/prop_array.h>
 
@@ -79,12 +78,9 @@ prop_dictionary_t prop_dictionary_internalize(const char *);
 
 bool		prop_dictionary_externalize_to_file(prop_dictionary_t,
 						    const char *);
-bool		prop_dictionary_externalize_to_zfile(prop_dictionary_t,
-						     const char *);
 prop_dictionary_t prop_dictionary_internalize_from_file(const char *);
-prop_dictionary_t prop_dictionary_internalize_from_zfile(const char *);
 
-const char *	prop_dictionary_keysym_cstring_nocopy(prop_dictionary_keysym_t);
+const char *	prop_dictionary_keysym_value(prop_dictionary_keysym_t);
 
 bool		prop_dictionary_keysym_equals(prop_dictionary_keysym_t,
 					      prop_dictionary_keysym_t);
@@ -95,10 +91,65 @@ bool		prop_dictionary_keysym_equals(prop_dictionary_keysym_t,
  */
 bool		prop_dictionary_get_dict(prop_dictionary_t, const char *,
 					 prop_dictionary_t *);
+
 bool		prop_dictionary_get_bool(prop_dictionary_t, const char *,
 					 bool *);
 bool		prop_dictionary_set_bool(prop_dictionary_t, const char *,
 					 bool);
+
+bool		prop_dictionary_get_schar(prop_dictionary_t, const char *,
+					  signed char *);
+bool		prop_dictionary_get_uchar(prop_dictionary_t, const char *,
+					  unsigned char *);
+bool		prop_dictionary_set_schar(prop_dictionary_t, const char *,
+					  signed char);
+bool		prop_dictionary_set_uchar(prop_dictionary_t, const char *,
+					  unsigned char);
+
+bool		prop_dictionary_get_short(prop_dictionary_t, const char *,
+					  short *);
+bool		prop_dictionary_get_ushort(prop_dictionary_t, const char *,
+					   unsigned short *);
+bool		prop_dictionary_set_short(prop_dictionary_t, const char *,
+					  short);
+bool		prop_dictionary_set_ushort(prop_dictionary_t, const char *,
+					   unsigned short);
+
+bool		prop_dictionary_get_int(prop_dictionary_t, const char *,
+					int *);
+bool		prop_dictionary_get_uint(prop_dictionary_t, const char *,
+					 unsigned int *);
+bool		prop_dictionary_set_int(prop_dictionary_t, const char *,
+					int);
+bool		prop_dictionary_set_uint(prop_dictionary_t, const char *,
+					 unsigned int);
+
+bool		prop_dictionary_get_long(prop_dictionary_t, const char *,
+					 long *);
+bool		prop_dictionary_get_ulong(prop_dictionary_t, const char *,
+					  unsigned long *);
+bool		prop_dictionary_set_long(prop_dictionary_t, const char *,
+					 long);
+bool		prop_dictionary_set_ulong(prop_dictionary_t, const char *,
+					  unsigned long);
+
+bool		prop_dictionary_get_longlong(prop_dictionary_t, const char *,
+					     long long *);
+bool		prop_dictionary_get_ulonglong(prop_dictionary_t, const char *,
+					      unsigned long long *);
+bool		prop_dictionary_set_longlong(prop_dictionary_t, const char *,
+					     long long);
+bool		prop_dictionary_set_ulonglong(prop_dictionary_t, const char *,
+					      unsigned long long);
+
+bool		prop_dictionary_get_intptr(prop_dictionary_t, const char *,
+					   intptr_t *);
+bool		prop_dictionary_get_uintptr(prop_dictionary_t, const char *,
+					    uintptr_t *);
+bool		prop_dictionary_set_intptr(prop_dictionary_t, const char *,
+					   intptr_t);
+bool		prop_dictionary_set_uintptr(prop_dictionary_t, const char *,
+					    uintptr_t);
 
 bool		prop_dictionary_get_int8(prop_dictionary_t, const char *,
 					 int8_t *);
@@ -136,6 +187,26 @@ bool		prop_dictionary_set_int64(prop_dictionary_t, const char *,
 bool		prop_dictionary_set_uint64(prop_dictionary_t, const char *,
 					   uint64_t);
 
+bool		prop_dictionary_get_string(prop_dictionary_t, const char *,
+					   const char **cpp);
+bool		prop_dictionary_set_string(prop_dictionary_t, const char *,
+					   const char *);
+bool		prop_dictionary_set_string_nocopy(prop_dictionary_t,
+						  const char *, const char *);
+
+bool		prop_dictionary_get_data(prop_dictionary_t, const char *,
+					 const void **, size_t *);
+bool		prop_dictionary_set_data(prop_dictionary_t, const char *,
+					 const void *, size_t);
+bool		prop_dictionary_set_data_nocopy(prop_dictionary_t, const char *,
+					 const void *, size_t);
+
+bool		prop_dictionary_set_and_rel(prop_dictionary_t,
+						   const char *,
+						   prop_object_t);
+
+
+/* Deprecated functions. */
 bool		prop_dictionary_get_cstring(prop_dictionary_t, const char *,
 					     char **);
 bool		prop_dictionary_set_cstring(prop_dictionary_t, const char *,
@@ -147,9 +218,8 @@ bool		prop_dictionary_get_cstring_nocopy(prop_dictionary_t,
 bool		prop_dictionary_set_cstring_nocopy(prop_dictionary_t,
 						   const char *,
 						   const char *);
-bool		prop_dictionary_set_and_rel(prop_dictionary_t,
-					    const char *,
-					    prop_object_t);
+
+const char *	prop_dictionary_keysym_cstring_nocopy(prop_dictionary_keysym_t);
 
 #ifdef __cplusplus
 }
