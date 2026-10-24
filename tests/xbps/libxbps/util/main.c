@@ -23,6 +23,7 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *-
  */
+#include <stdlib.h>
 #include <string.h>
 #include <atf-c.h>
 #include <xbps.h>
@@ -37,6 +38,7 @@ ATF_TC_HEAD(util_test, tc)
 ATF_TC_BODY(util_test, tc)
 {
 	char name[XBPS_NAME_SIZE];
+	char *s;
 
 	ATF_CHECK_EQ(xbps_pkg_name(name, sizeof(name), "font-adobe-a"), false);
 	ATF_CHECK_EQ(xbps_pkg_name(name, sizeof(name), "font-adobe-1"), false);
@@ -81,18 +83,28 @@ ATF_TC_BODY(util_test, tc)
 	ATF_REQUIRE_STREQ(name, "systemd");
 	ATF_CHECK_EQ(xbps_pkgpattern_name(name, sizeof(name), "*nslookup"), false);
 
-	ATF_REQUIRE_STREQ(xbps_binpkg_arch("/path/to/foo-1.0_1.x86_64.xbps"), "x86_64");
-	ATF_REQUIRE_STREQ(xbps_binpkg_arch("/path/to/foo-1.0_1.x86_64-musl.xbps"), "x86_64-musl");
-	ATF_REQUIRE_STREQ(xbps_binpkg_arch("foo-1.0_1.x86_64-musl.xbps"), "x86_64-musl");
-	ATF_REQUIRE_STREQ(xbps_binpkg_arch("foo-1.0_1.x86_64.xbps"), "x86_64");
+	ATF_REQUIRE_STREQ((s = xbps_binpkg_arch("/path/to/foo-1.0_1.x86_64.xbps")), "x86_64");
+	free(s);
+	ATF_REQUIRE_STREQ((s = xbps_binpkg_arch("/path/to/foo-1.0_1.x86_64-musl.xbps")), "x86_64-musl");
+	free(s);
+	ATF_REQUIRE_STREQ((s = xbps_binpkg_arch("foo-1.0_1.x86_64-musl.xbps")), "x86_64-musl");
+	free(s);
+	ATF_REQUIRE_STREQ((s = xbps_binpkg_arch("foo-1.0_1.x86_64.xbps")), "x86_64");
+	free(s);
 
-	ATF_REQUIRE_STREQ(xbps_binpkg_pkgver("foo-1.0_1.x86_64.xbps"), "foo-1.0_1");
-	ATF_REQUIRE_STREQ(xbps_binpkg_pkgver("foo-1.0_1.x86_64-musl.xbps"), "foo-1.0_1");
-	ATF_REQUIRE_STREQ(xbps_binpkg_pkgver("/path/to/foo-1.0_1.x86_64.xbps"), "foo-1.0_1");
-	ATF_REQUIRE_STREQ(xbps_binpkg_pkgver("/path/to/foo-1.0_1.x86_64-musl.xbps"), "foo-1.0_1");
+	ATF_REQUIRE_STREQ((s = xbps_binpkg_pkgver("foo-1.0_1.x86_64.xbps")), "foo-1.0_1");
+	free(s);
+	ATF_REQUIRE_STREQ((s = xbps_binpkg_pkgver("foo-1.0_1.x86_64-musl.xbps")), "foo-1.0_1");
+	free(s);
+	ATF_REQUIRE_STREQ((s = xbps_binpkg_pkgver("/path/to/foo-1.0_1.x86_64.xbps")), "foo-1.0_1");
+	free(s);
+	ATF_REQUIRE_STREQ((s = xbps_binpkg_pkgver("/path/to/foo-1.0_1.x86_64-musl.xbps")), "foo-1.0_1");
+	free(s);
 
-	ATF_CHECK_EQ(xbps_binpkg_pkgver("foo-1.0.x86_64.xbps"), NULL);
-	ATF_CHECK_EQ(xbps_binpkg_pkgver("foo-1.0.x86_64"), NULL);
+	ATF_CHECK_EQ((s = xbps_binpkg_pkgver("foo-1.0.x86_64.xbps")), NULL);
+	free(s);
+	ATF_CHECK_EQ((s = xbps_binpkg_pkgver("foo-1.0.x86_64")), NULL);
+	free(s);
 }
 
 ATF_TP_ADD_TCS(tp)

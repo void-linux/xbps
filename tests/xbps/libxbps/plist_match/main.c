@@ -50,6 +50,7 @@ ATF_TC_BODY(match_string_test, tc)
 	xbps_array_t a = array_init();
 	ATF_REQUIRE_EQ(xbps_match_string_in_array(a, "foo-2.0_1"), true);
 	ATF_REQUIRE_EQ(xbps_match_string_in_array(a, "foo-2.1_1"), false);
+	xbps_object_release(a);
 }
 
 ATF_TC(match_pkgname_test);
@@ -63,6 +64,7 @@ ATF_TC_BODY(match_pkgname_test, tc)
 	xbps_array_t a = array_init();
 	ATF_REQUIRE_EQ(xbps_match_pkgname_in_array(a, "foo"), true);
 	ATF_REQUIRE_EQ(xbps_match_pkgname_in_array(a, "baz"), false);
+	xbps_object_release(a);
 }
 
 ATF_TC(match_pkgpattern_test);
@@ -76,6 +78,7 @@ ATF_TC_BODY(match_pkgpattern_test, tc)
 	xbps_array_t a = array_init();
 	ATF_REQUIRE_EQ(xbps_match_pkgpattern_in_array(a, "foo>=1.0"), true);
 	ATF_REQUIRE_EQ(xbps_match_pkgpattern_in_array(a, "blah<1.0"), false);
+	xbps_object_release(a);
 }
 
 ATF_TC(match_pkgdep_test);
@@ -88,6 +91,7 @@ ATF_TC_BODY(match_pkgdep_test, tc)
 {
 	xbps_array_t a = array_init();
 	ATF_REQUIRE_EQ(xbps_match_pkgdep_in_array(a, "foo-2.0_1"), true);
+	xbps_object_release(a);
 }
 
 ATF_TP_ADD_TCS(tp)

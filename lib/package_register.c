@@ -107,7 +107,6 @@ xbps_register_pkg(struct xbps_handle *xhp, xbps_dictionary_t pkgrd)
 	xbps_dictionary_remove(pkgd, "remove-and-update");
 	xbps_dictionary_remove(pkgd, "transaction");
 	xbps_dictionary_remove(pkgd, "skip-obsoletes");
-	xbps_dictionary_remove(pkgd, "pkgname");
 	xbps_dictionary_remove(pkgd, "version");
 
 	if (!xbps_dictionary_set(xhp->pkgdb, pkgname, pkgd)) {

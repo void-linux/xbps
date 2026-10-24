@@ -110,12 +110,10 @@ archive_dict(struct archive *ar, const char *filename, xbps_dictionary_t dict)
 	errno = 0;
 	buf = xbps_dictionary_externalize(dict);
 	if (!buf) {
-		r = -errno;
-		xbps_error_printf("failed to externalize dictionary for: %s\n",
-		    filename);
-		if (r == 0)
-			return -EINVAL;
-		return 0;
+		if (errno == 0)
+			errno = EINVAL;
+		return xbps_error_errno(errno,
+		    "failed to externalize dictionary for: %s\n", filename);
 	}
 
 	r = xbps_archive_append_buf(ar, buf, strlen(buf), filename, 0644,
@@ -147,23 +145,23 @@ repodata_flush(const char *repodir,
 
 	r = snprintf(path, sizeof(path), "%s/%s-repodata", repodir, arch);
 	if (r < 0 || (size_t)r >= sizeof(tmp)) {
-		xbps_error_printf("repodata path too long: %s: %s\n", path,
+		return xbps_error_errno(ENAMETOOLONG,
+		    "repodata path too long: %s: %s\n", path,
 		    strerror(ENAMETOOLONG));
-		return -ENAMETOOLONG;
 	}
 
 	r = snprintf(tmp, sizeof(tmp), "%s.XXXXXXX", path);
 	if (r < 0 || (size_t)r >= sizeof(tmp)) {
-		xbps_error_printf("repodata tmp path too long: %s: %s\n", path,
+		return xbps_error_errno(ENAMETOOLONG,
+		    "repodata tmp path too long: %s: %s\n", path,
 		    strerror(ENAMETOOLONG));
-		return -ENAMETOOLONG;
 	}
 
 	prevumask = umask(S_IXUSR|S_IRWXG|S_IRWXO);
 	fd = mkstemp(tmp);
 	if (fd == -1) {
-		r = -errno;
-		xbps_error_printf("failed to open temp file: %s: %s", tmp, strerror(-r));
+		r = xbps_error_errno(errno, "failed to open temp file: %s: %s",
+		    tmp, strerror(-r));
 		umask(prevumask);
 		goto err;
 	}
@@ -194,8 +192,7 @@ repodata_flush(const char *repodir,
 		goto err;
 	}
 	if (archive_write_free(ar) == ARCHIVE_FATAL) {
-		r = -errno;
-		xbps_error_printf("failed to free archive: %s\n", strerror(-r));
+		r = xbps_error_errno(errno, "failed to free archive: %s\n", strerror(errno));
 		goto err;
 	}
 
@@ -206,9 +203,8 @@ repodata_flush(const char *repodir,
 #endif
 
 	if (fchmod(fd, 0664) == -1) {
-		errno = -r;
-		xbps_error_printf("failed to set mode: %s: %s\n",
-		   tmp, strerror(-r));
+		r = xbps_error_errno(errno, "failed to set mode: %s: %s\n", tmp,
+		    strerror(errno));
 		close(fd);
 		unlink(tmp);
 		return r;
@@ -216,9 +212,9 @@ repodata_flush(const char *repodir,
 	close(fd);
 
 	if (rename(tmp, path) == -1) {
-		r = -errno;
-		xbps_error_printf("failed to rename repodata: %s: %s: %s\n",
-		   tmp, path, strerror(-r));
+		r = xbps_error_errno(errno,
+		    "failed to rename repodata: %s: %s: %s\n", tmp, path,
+		    strerror(errno));
 		unlink(tmp);
 		return r;
 	}

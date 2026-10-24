@@ -122,59 +122,54 @@ main(int argc, char **argv)
 		{ "staging", no_argument, NULL, 2 },
 		{ NULL, 0, NULL, 0 }
 	};
-	struct xbps_handle xh;
+	struct xbps_handle xh = {0};
 	struct xferstat xfer;
-	const char *rootdir, *cachedir, *confdir;
-	int i, c, flags, rv, fflag = 0;
+	int i, c, rv, fflag = 0;
 	bool syncf, yes, force, drun, update;
 	int maxcols, eexist = 0;
 
-	rootdir = cachedir = confdir = NULL;
-	flags = rv = 0;
 	syncf = yes = force = drun = update = false;
-
-	memset(&xh, 0, sizeof(xh));
 
 	while ((c = getopt_long(argc, argv, shortopts, longopts, NULL)) != -1) {
 		switch (c) {
 		case 1:
-			flags |= XBPS_FLAG_INSTALL_REPRO;
+			xh.flags |= XBPS_FLAG_INSTALL_REPRO;
 			break;
 		case 2:
-			flags |= XBPS_FLAG_USE_STAGE;
+			xh.flags |= XBPS_FLAG_USE_STAGE;
 			break;
 		case 'A':
-			flags |= XBPS_FLAG_INSTALL_AUTO;
+			xh.flags |= XBPS_FLAG_INSTALL_AUTO;
 			break;
 		case 'C':
-			confdir = optarg;
+			xbps_strlcpy(xh.confdir, optarg, sizeof(xh.confdir));
 			break;
 		case 'c':
-			cachedir = optarg;
+			xbps_strlcpy(xh.cachedir, optarg, sizeof(xh.cachedir));
 			break;
 		case 'd':
-			flags |= XBPS_FLAG_DEBUG;
+			xh.flags |= XBPS_FLAG_DEBUG;
 			break;
 		case 'D':
-			flags |= XBPS_FLAG_DOWNLOAD_ONLY;
+			xh.flags |= XBPS_FLAG_DOWNLOAD_ONLY;
 			break;
 		case 'f':
 			fflag++;
 			if (fflag > 1)
-				flags |= XBPS_FLAG_FORCE_UNPACK;
+				xh.flags |= XBPS_FLAG_FORCE_UNPACK;
 			force = true;
 			break;
 		case 'h':
 			usage(false);
 			/* NOTREACHED */
 		case 'I':
-			flags |= XBPS_FLAG_IGNORE_FILE_CONFLICTS;
+			xh.flags |= XBPS_FLAG_IGNORE_FILE_CONFLICTS;
 			break;
 		case 'i':
-			flags |= XBPS_FLAG_IGNORE_CONF_REPOS;
+			xh.flags |= XBPS_FLAG_IGNORE_CONF_REPOS;
 			break;
 		case 'M':
-			flags |= XBPS_FLAG_REPOS_MEMSYNC;
+			xh.flags |= XBPS_FLAG_REPOS_MEMSYNC;
 			break;
 		case 'n':
 			drun = true;
@@ -183,19 +178,19 @@ main(int argc, char **argv)
 			xbps_repo_store(&xh, optarg);
 			break;
 		case 'r':
-			rootdir = optarg;
+			xbps_strlcpy(xh.rootdir, optarg, sizeof(xh.rootdir));
 			break;
 		case 'S':
 			syncf = true;
 			break;
 		case 'U':
-			flags |= XBPS_FLAG_UNPACK_ONLY;
+			xh.flags |= XBPS_FLAG_UNPACK_ONLY;
 			break;
 		case 'u':
 			update = true;
 			break;
 		case 'v':
-			flags |= XBPS_FLAG_VERBOSE;
+			xh.flags |= XBPS_FLAG_VERBOSE;
 			break;
 		case 'V':
 			printf("%s\n", XBPS_RELVER);
@@ -218,14 +213,7 @@ main(int argc, char **argv)
 	xh.state_cb = state_cb;
 	xh.fetch_cb = fetch_file_progress_cb;
 	xh.fetch_cb_data = &xfer;
-	if (rootdir)
-		xbps_strlcpy(xh.rootdir, rootdir, sizeof(xh.rootdir));
-	if (cachedir)
-		xbps_strlcpy(xh.cachedir, cachedir, sizeof(xh.cachedir));
-	if (confdir)
-		xbps_strlcpy(xh.confdir, confdir, sizeof(xh.confdir));
-	xh.flags = flags;
-	if (flags & XBPS_FLAG_VERBOSE)
+	if (xh.flags & XBPS_FLAG_VERBOSE)
 		xh.unpack_cb = unpack_progress_cb;
 
 	if ((rv = xbps_init(&xh)) != 0) {

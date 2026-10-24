@@ -29,6 +29,7 @@
 #include <string.h>
 #include <errno.h>
 
+#include "xbps/xbps_object.h"
 #include "xbps_api_impl.h"
 #include "uthash.h"
 
@@ -47,8 +48,8 @@ struct item {
 	UT_hash_handle hh;
 };
 
+// XXX: this shouldn't be a global static...
 static struct item *items = NULL;
-static xbps_array_t result;
 
 static struct item *
 lookupItem(const char *pkgn)
@@ -104,7 +105,7 @@ addDepn(struct item *item, struct item *xitem)
 }
 
 static int
-add_deps_recursive(struct item *item, bool first)
+add_deps_recursive(xbps_array_t result, struct item *item, bool first)
 {
 	struct depn *dep;
 	xbps_string_t str;
@@ -113,11 +114,10 @@ add_deps_recursive(struct item *item, bool first)
 		return 0;
 
 	for (dep = item->dbase; dep; dep = dep->dnext) {
-		int r = add_deps_recursive(dep->item, false);
+		int r = add_deps_recursive(result, dep->item, false);
 		if (r < 0)
 			return r;
 	}
-
 
 	if (first)
 		return 0;
@@ -146,19 +146,23 @@ cleanup(void)
 	}
 }
 
+struct deptree_ctx {
+	struct xbps_handle *xhp;
+	xbps_array_t result;
+	bool rpool;
+};
+
 /*
  * Recursively calculate all dependencies.
  */
 static struct item *
-ordered_depends(struct xbps_handle *xhp, xbps_dictionary_t pkgd, bool rpool,
-		size_t depth)
+ordered_depends(struct deptree_ctx *ctx, xbps_dictionary_t pkgd, size_t depth)
 {
 	xbps_array_t rdeps, provides;
 	xbps_string_t str;
 	struct item *item = NULL, *xitem = NULL;
 	const char *pkgver = NULL, *pkgname = NULL;
 
-	assert(xhp);
 	assert(pkgd);
 
 	rdeps = xbps_dictionary_get(pkgd, "run_depends");
@@ -167,7 +171,7 @@ ordered_depends(struct xbps_handle *xhp, xbps_dictionary_t pkgd, bool rpool,
 
 	item = lookupItem(pkgname);
 	if (item) {
-		int r = add_deps_recursive(item, depth == 0);
+		int r = add_deps_recursive(ctx->result, item, depth == 0);
 		if (r < 0)
 			return NULL;
 		return item;
@@ -186,12 +190,12 @@ ordered_depends(struct xbps_handle *xhp, xbps_dictionary_t pkgd, bool rpool,
 		char curdepname[XBPS_NAME_SIZE];
 
 		xbps_array_get_cstring_nocopy(rdeps, i, &curdep);
-		if (rpool) {
-			if ((curpkgd = xbps_rpool_get_pkg(xhp, curdep)) == NULL)
-				curpkgd = xbps_rpool_get_virtualpkg(xhp, curdep);
+		if (ctx->rpool) {
+			if ((curpkgd = xbps_rpool_get_pkg(ctx->xhp, curdep)) == NULL)
+				curpkgd = xbps_rpool_get_virtualpkg(ctx->xhp, curdep);
 		} else {
-			if ((curpkgd = xbps_pkgdb_get_pkg(xhp, curdep)) == NULL)
-				curpkgd = xbps_pkgdb_get_virtualpkg(xhp, curdep);
+			if ((curpkgd = xbps_pkgdb_get_pkg(ctx->xhp, curdep)) == NULL)
+				curpkgd = xbps_pkgdb_get_virtualpkg(ctx->xhp, curdep);
 			/* Ignore missing local runtime dependencies, because ignorepkg */
 			if (curpkgd == NULL)
 				continue;
@@ -213,22 +217,26 @@ ordered_depends(struct xbps_handle *xhp, xbps_dictionary_t pkgd, bool rpool,
 		}
 		xitem = lookupItem(curdepname);
 		if (xitem) {
-			add_deps_recursive(xitem, false);
+			add_deps_recursive(ctx->result, xitem, false);
 			continue;
 		}
-		xitem = ordered_depends(xhp, curpkgd, rpool, depth+1);
+		xitem = ordered_depends(ctx, curpkgd, depth+1);
 		if (!xitem)
 			return NULL;
 		addDepn(item, xitem);
 	}
 	/* all deps were processed, add item to head */
-	if (depth > 0 && !xbps_match_string_in_array(result, item->pkgver)) {
+	if (depth > 0 && !xbps_match_string_in_array(ctx->result, item->pkgver)) {
 		str = xbps_string_create_cstring(item->pkgver);
 		if (!str) {
 			xbps_error_oom();
 			return NULL;
 		}
-		xbps_array_add_first(result, str);
+		if (!xbps_array_add_first(ctx->result, str)) {
+			xbps_error_oom();
+			xbps_object_release(str);
+			return NULL;
+		}
 		xbps_object_release(str);
 	}
 	return item;
@@ -237,13 +245,11 @@ ordered_depends(struct xbps_handle *xhp, xbps_dictionary_t pkgd, bool rpool,
 xbps_array_t HIDDEN
 xbps_get_pkg_fulldeptree(struct xbps_handle *xhp, const char *pkg, bool rpool)
 {
+	struct deptree_ctx ctx = {
+		.xhp = xhp,
+		.rpool = rpool,
+	};
 	xbps_dictionary_t pkgd;
-
-	result = xbps_array_create();
-	if (!result) {
-		xbps_error_oom();
-		return NULL;
-	}
 
 	if (rpool) {
 		if (((pkgd = xbps_rpool_get_pkg(xhp, pkg)) == NULL) &&
@@ -254,9 +260,20 @@ xbps_get_pkg_fulldeptree(struct xbps_handle *xhp, const char *pkg, bool rpool)
 		    ((pkgd = xbps_pkgdb_get_virtualpkg(xhp, pkg)) == NULL))
 			return NULL;
 	}
-	if (ordered_depends(xhp, pkgd, rpool, 0) == NULL)
+
+	ctx.result = xbps_array_create();
+	if (!ctx.result) {
+		xbps_error_oom();
 		return NULL;
+	}
+
+	if (ordered_depends(&ctx, pkgd, 0) == NULL)
+		goto err;
 
 	cleanup();
-	return result;
+	return ctx.result;
+err:
+	cleanup();
+	xbps_object_release(ctx.result);
+	return NULL;
 }
