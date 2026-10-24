@@ -1,0 +1,187 @@
+.Dd December 22, 2025
+.Dt XBPS.HOOK 5
+.Os
+.Sh NAME
+.Nm xbps.hook
+.Nd XBPS hook configuration
+.Sh SYNOPSIS
+.Bl -item -compact
+.It
+/etc/xbps.d/hooks/*.hook
+.It
+/usr/share/xbps.d/hooks/*.hook
+.El
+.Sh DESCRIPTION
+The
+.Nm
+files are
+.So .ini Sc Ns -style
+configuration files to define hooks that execute commands at certain points of
+the xbps transactions
+.Po
+package updates,
+installs,
+and removals.
+.Pc
+.Pp
+Comments can be put anywhere in the file
+and using hashmarks
+.Pq Sq # ,
+or
+semi-colons
+.Pq Sq \&; ,
+and are continued to the end of the line.
+.Sh [HOOK] SECTION OPTIONS
+The
+.Ic Hook
+section is required and defines when the hook is executed and the command that
+is being executed as part of the hook.
+.Bl -tag -width -x
+.It Sy Name = Ar name
+Set the hook name used for logging.
+.It Ic When = Ar option ...
+Defines when the hook is executed.
+The following values are supported
+and multiple values can be set by
+separating them with a space or defining
+the
+.Sy When
+option multiple times.
+Valid options are:
+.Bl -tag -width -x
+.It Ic PreTransaction
+Before all packages are installed,
+updated,
+or removed.
+.It Ic PostTransaction
+After all packages are installed,
+updated,
+or removed.
+.El
+.It Sy Exec = Ar command Op Ar args ...
+Command that is executed.
+The
+.Ar command
+and
+.Ar args
+are split into words according to
+.Sx WORD SPLITTING .
+.El
+.Sh [MATCH] SECTION OPTIONS
+A hook is executed if it's
+.Ic Match
+section matches the current transaction.
+.Bl -tag -width -x
+.It Ic Package = Ar pkgname | Ar pkgpattern
+Matches if
+.Ar pkgname
+or packages matching
+.Ar pkgpattern
+are installed,
+updated,
+removed,
+reinstalled,
+or configured in the transaction.
+.It Ic PackageInstall = Ar pkgname | Ar pkgpattern
+Matches if
+.Ar pkgname
+or packages matching
+.Ar pkgpattern
+are installed in the transaction.
+.It Ic PackageUpdate = Ar pkgname | Ar pkgpattern
+Matches if
+.Ar pkgname
+or packages matching
+.Ar pkgpattern
+are updated in the transaction.
+.It Ic PackageRemove = Ar pkgname | Ar pkgpattern
+Matches if
+.Ar pkgname
+or packages matching
+.Ar pkgpattern
+are removed in the transaction.
+.It Ic PackageReinstall = Ar pkgname | Ar pkgpattern
+Matches if
+.Ar pkgname
+or packages matching
+.Ar pkgpattern
+are reinstalled in the transaction.
+.It Ic PackageConfigure = Ar pkgname | Ar pkgpattern
+Matches if
+.Ar pkgname
+or packages matching
+.Ar pkgpattern
+are configured in the transaction.
+.It Ic Path = Ar path | Ar pattern
+Matches if
+.Ar path
+or paths matching
+.Ar pattern
+are created,
+modified,
+or deleted.
+.It Ic PathCreated = Ar path | Ar pattern
+Matches if
+.Ar path
+or paths matching
+.Ar pattern
+are created in the transaction.
+.It Ic PathModified = Ar path | Ar pattern
+Matches if
+.Ar path
+or paths matching
+.Ar pattern
+are modified in the transaction.
+.It Ic PathDeleted = Ar path | Ar pattern
+Matches if
+.Ar path
+or paths matching
+.Ar pattern
+are deleted in the transaction.
+.El
+.Sh WORD SPLITTING
+Options which support multiple free text values will be split into separate
+words.
+The word boundaries are spaces
+.Pq Sq \~
+and tabs
+.Pq Sq \et .
+.Pp
+If a word contains a literal space
+.Pq Sq \~
+or tab
+.Pq Sq \et ,
+use a backslash
+.Pq Sq \e
+to escape the character.
+.Sh EXAMPLES
+The following example restarts the
+.Ic sshd
+service after the
+.Ic ssh
+package was updated.
+.Bd -literal -offset indent
+[Hook]
+Name = Restart sshd.
+When = PostTransaction
+Exec = sv restart /var/service/sshd
+
+[Match]
+PackageUpdate = ssh
+.Ed
+.Pp
+This example hook will sign the
+.Pa systemd-bootx64.efi
+file whenever it is updated or installed.
+.Bd -literal -offset indent
+[Hook]
+Name = Sign the bootloader file.
+When = PostTransaction
+Exec = sbsign --key /etc/kernel/secure-boot.key.pem \e
+	--cert /etc/kernel/secure-boot.cert.pem \e
+	--output /usr/lib/systemd/boot/efi/systemd-bootx64.efi.signed \e
+	/usr/lib/systemd/boot/efi/systemd-bootx64.efi
+
+[Match]
+PathModified = /usr/lib/systemd/boot/efi/systemd-bootx64.efi
+.Ed
