@@ -87,7 +87,7 @@ self_replace_body() {
 	echo "A-1.0_1" > pkg_A/usr/bin/foo
 	echo "B-1.0_1" > pkg_B/usr/bin/foo
 	cd some_repo
-	atf_check -o ignore -- xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
+	atf_check -o ignore -- xbps-create -A noarch -n A-1.0_1 -s "A pkg" --replaces "A>=0" ../pkg_A
 	atf_check -o ignore -- xbps-create -A noarch -n B-1.0_1 -s "B pkg" --replaces "A>=0" --provides="A-1.0_1" ../pkg_B
 	atf_check -o ignore -- xbps-rindex -a $PWD/*.xbps
 	cd ..
