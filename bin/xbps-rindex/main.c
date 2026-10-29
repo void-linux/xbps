@@ -37,34 +37,36 @@ usage(bool fail)
 	fprintf(stdout,
 	    "Usage: xbps-rindex [OPTIONS] MODE ARGUMENTS\n\n"
 	    "OPTIONS\n"
-	    " -d, --debug                        Debug mode shown to stderr\n"
-	    " -f, --force                        Force mode to overwrite entry in add mode\n"
-	    " -h, --help                         Show usage\n"
-	    " -v, --verbose                      Verbose messages\n"
-	    " -V, --version                      Show XBPS version\n"
-	    " -C, --hashcheck                    Consider file hashes for cleaning up packages\n"
-	    "     --compression <fmt>            Compression format: none, gzip, bzip2, lz4, xz, zstd (default)\n"
-	    "     --privkey <key>                Path to the private key for signing\n"
-	    "     --signedby <string>            Signature details, i.e \"name <email>\"\n\n"
+	    " -d, --debug                          Debug mode shown to stderr\n"
+	    " -f, --force                          Force mode to overwrite entry in add mode\n"
+	    " -h, --help                           Show usage\n"
+	    " -v, --verbose                        Verbose messages\n"
+	    " -V, --version                        Show XBPS version\n"
+	    " -C, --hashcheck                      Consider file hashes for cleaning up packages\n"
+	    "     --compression <fmt>              Compression format: none, gzip, bzip2, lz4, xz, zstd (default)\n"
+	    "     --privkey <key>                  Path to the private key for signing\n"
+	    "     --signedby <string>              Signature details, i.e \"name <email>\"\n\n"
 	    "MODE\n"
-	    " -a, --add <repodir/file.xbps> ...  Add package(s) to repository index\n"
-	    " -c, --clean <repodir>              Clean repository index\n"
-	    " -r, --remove-obsoletes <repodir>   Removes obsolete packages from repository\n"
-	    " -s, --sign <repodir>               Initialize repository metadata signature\n"
-	    " -S, --sign-pkg <file.xbps> ...     Sign binary package archive\n");
+	    " -a, --add <repodir/file.xbps> ...    Add package(s) to repository index\n"
+	    " -c, --clean <repodir>                Clean repository index\n"
+	    " -p, --purge <repodir/file.xbps> ...  Purge package(s) from repository index\n"
+	    " -r, --remove-obsoletes <repodir>     Removes obsolete packages from repository\n"
+	    " -s, --sign <repodir>                 Initialize repository metadata signature\n"
+	    " -S, --sign-pkg <file.xbps> ...       Sign binary package archive\n");
 	exit(fail ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 
 int
 main(int argc, char **argv)
 {
-	const char *shortopts = "acdfhrsCSVv";
+	const char *shortopts = "acdfhprsCSVv";
 	struct option longopts[] = {
 		{ "add", no_argument, NULL, 'a' },
 		{ "clean", no_argument, NULL, 'c' },
 		{ "debug", no_argument, NULL, 'd' },
 		{ "force", no_argument, NULL, 'f' },
 		{ "help", no_argument, NULL, 'h' },
+		{ "purge", no_argument, NULL, 'p' },
 		{ "remove-obsoletes", no_argument, NULL, 'r' },
 		{ "version", no_argument, NULL, 'V' },
 		{ "verbose", no_argument, NULL, 'v' },
@@ -80,11 +82,11 @@ main(int argc, char **argv)
 	const char *compression = NULL;
 	const char *privkey = NULL, *signedby = NULL;
 	int rv, c, flags = 0;
-	bool add_mode, clean_mode, rm_mode, sign_mode, sign_pkg_mode, force,
-			 hashcheck;
+	bool add_mode, clean_mode, purge_mode, rm_mode, sign_mode, sign_pkg_mode,
+			 force, hashcheck;
 
-	add_mode = clean_mode = rm_mode = sign_mode = sign_pkg_mode = force =
-		hashcheck = false;
+	add_mode = clean_mode = purge_mode = rm_mode = sign_mode = sign_pkg_mode =
+		force = hashcheck = false;
 
 	while ((c = getopt_long(argc, argv, shortopts, longopts, NULL)) != -1) {
 		switch (c) {
@@ -112,6 +114,9 @@ main(int argc, char **argv)
 		case 'h':
 			usage(false);
 			/* NOTREACHED */
+		case 'p':
+			purge_mode = true;
+			break;
 		case 'r':
 			rm_mode = true;
 			break;
@@ -137,15 +142,16 @@ main(int argc, char **argv)
 		}
 	}
 	if ((argc == optind) ||
-	    (!add_mode && !clean_mode && !rm_mode && !sign_mode && !sign_pkg_mode)) {
+	    (!add_mode && !clean_mode && !purge_mode && !rm_mode && !sign_mode && !sign_pkg_mode)) {
 		usage(true);
 		/* NOTREACHED */
-	} else if ((add_mode && (clean_mode || rm_mode || sign_mode || sign_pkg_mode)) ||
-		   (clean_mode && (add_mode || rm_mode || sign_mode || sign_pkg_mode)) ||
-		   (rm_mode && (add_mode || clean_mode || sign_mode || sign_pkg_mode)) ||
-		   (sign_mode && (add_mode || clean_mode || rm_mode || sign_pkg_mode)) ||
-		   (sign_pkg_mode && (add_mode || clean_mode || rm_mode || sign_mode))) {
-		xbps_error_printf("Only one mode can be specified: add, clean, "
+	} else if ((add_mode && (clean_mode || purge_mode || rm_mode || sign_mode || sign_pkg_mode)) ||
+		   (clean_mode && (add_mode || purge_mode || rm_mode || sign_mode || sign_pkg_mode)) ||
+		   (purge_mode && (add_mode || clean_mode || rm_mode || sign_mode || sign_pkg_mode)) ||
+		   (rm_mode && (add_mode || clean_mode || purge_mode || sign_mode || sign_pkg_mode)) ||
+		   (sign_mode && (add_mode || clean_mode || purge_mode || rm_mode || sign_pkg_mode)) ||
+		   (sign_pkg_mode && (add_mode || clean_mode || purge_mode || rm_mode || sign_mode))) {
+		xbps_error_printf("Only one mode can be specified: add, clean, purge, "
 		    "remove-obsoletes, sign or sign-pkg.\n");
 		exit(EXIT_FAILURE);
 	}
@@ -163,6 +169,8 @@ main(int argc, char **argv)
 		rv = index_add(&xh, optind, argc, argv, force, compression);
 	else if (clean_mode)
 		rv = index_clean(&xh, argv[optind], hashcheck, compression);
+	else if (purge_mode)
+		rv = index_purge(&xh, optind, argc, argv, compression);
 	else if (rm_mode)
 		rv = remove_obsoletes(&xh, argv[optind]);
 	else if (sign_mode)

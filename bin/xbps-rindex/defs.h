@@ -36,6 +36,9 @@ int	index_add(struct xbps_handle *, int, int, char **, bool, const char *);
 /* From index-clean.c */
 int	index_clean(struct xbps_handle *, const char *, bool, const char *);
 
+/* From index-purge.c */
+int	index_purge(struct xbps_handle *, int, int, char **, const char *);
+
 /* From remove-obsoletes.c */
 int	remove_obsoletes(struct xbps_handle *, const char *);
 
