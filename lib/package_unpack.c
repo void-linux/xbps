@@ -234,7 +234,7 @@ unpack_archive(struct xbps_handle *xhp,
 		 * Archive entries have been required to start with ./
 		 * instead of / for a long time, we can enforce it.
 		 */
-		if (entry_pname[0] != '.') {
+		if (entry_pname[0] != '.' || entry_pname[1] != '/') {
 			xbps_error_printf("%s: invalid archive entry: %s\n",
 			    pkgver, entry_pname);
 			archive_read_data_skip(ar);
