@@ -109,6 +109,10 @@ xbps_pubkey2fp(xbps_data_t pubkey)
 	RSA_get0_key(pRsa, &n, &e, NULL);
 	// reading the modulus
 	nLen = BN_num_bytes(n);
+	if (nLen <= 0) {
+		xbps_dbg_printf("invalid RSA public key: empty modulus\n");
+		goto out;
+	}
 	nBytes = (unsigned char*) malloc(nLen);
 	if (nBytes == NULL)
 		goto out;
@@ -116,6 +120,10 @@ xbps_pubkey2fp(xbps_data_t pubkey)
 
 	// reading the public exponent
 	eLen = BN_num_bytes(e);
+	if (eLen <= 0) {
+		xbps_dbg_printf("invalid RSA public key: empty exponent\n");
+		goto out;
+	}
 	eBytes = (unsigned char*) malloc(eLen);
 	if (eBytes == NULL)
 		goto out;
