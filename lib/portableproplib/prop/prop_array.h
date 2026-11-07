@@ -1,8 +1,8 @@
-/*     $NetBSD: prop_array.h,v 1.8 2008/09/11 13:15:13 haad Exp $    */
+/*     $NetBSD: prop_array.h,v 1.17 2020/06/06 21:25:59 thorpej Exp $    */
 
 /*-
  * Copyright (c) 2014 Juan Romero Pardines.
- * Copyright (c) 2006 The NetBSD Foundation, Inc.
+ * Copyright (c) 2006, 2009, 2020 The NetBSD Foundation, Inc.
  * All rights reserved.
  *
  * This code is derived from software contributed to The NetBSD Foundation
@@ -33,7 +33,6 @@
 #ifndef _PROPLIB_PROP_ARRAY_H_
 #define	_PROPLIB_PROP_ARRAY_H_
 
-#include <stdint.h>
 #include <prop/prop_object.h>
 
 typedef struct _prop_array *prop_array_t;
@@ -69,9 +68,7 @@ char *		prop_array_externalize(prop_array_t);
 prop_array_t	prop_array_internalize(const char *);
 
 bool		prop_array_externalize_to_file(prop_array_t, const char *);
-bool		prop_array_externalize_to_zfile(prop_array_t, const char *);
 prop_array_t	prop_array_internalize_from_file(const char *);
-prop_array_t	prop_array_internalize_from_zfile(const char *);
 
 /*
  * Utility routines to make it more convenient to work with values
@@ -81,6 +78,60 @@ bool		prop_array_get_bool(prop_array_t, unsigned int,
 					 bool *);
 bool		prop_array_set_bool(prop_array_t, unsigned int,
 					 bool);
+
+bool		prop_array_get_schar(prop_array_t, unsigned int,
+					 signed char *);
+bool		prop_array_get_uchar(prop_array_t, unsigned int,
+					 unsigned char *);
+bool		prop_array_set_schar(prop_array_t, unsigned int,
+					 signed char);
+bool		prop_array_set_uchar(prop_array_t, unsigned int,
+					 unsigned char);
+
+bool		prop_array_get_short(prop_array_t, unsigned int,
+					 short *);
+bool		prop_array_get_ushort(prop_array_t, unsigned int,
+					 unsigned short *);
+bool		prop_array_set_short(prop_array_t, unsigned int,
+					 short);
+bool		prop_array_set_ushort(prop_array_t, unsigned int,
+					 unsigned short);
+
+bool		prop_array_get_int(prop_array_t, unsigned int,
+					 int *);
+bool		prop_array_get_uint(prop_array_t, unsigned int,
+					 unsigned int *);
+bool		prop_array_set_int(prop_array_t, unsigned int,
+					 int);
+bool		prop_array_set_uint(prop_array_t, unsigned int,
+					 unsigned int);
+
+bool		prop_array_get_long(prop_array_t, unsigned int,
+					 long *);
+bool		prop_array_get_ulong(prop_array_t, unsigned int,
+					 unsigned long *);
+bool		prop_array_set_long(prop_array_t, unsigned int,
+					 long);
+bool		prop_array_set_ulong(prop_array_t, unsigned int,
+					 unsigned long);
+
+bool		prop_array_get_longlong(prop_array_t, unsigned int,
+					 long long *);
+bool		prop_array_get_ulonglong(prop_array_t, unsigned int,
+					 unsigned long long *);
+bool		prop_array_set_longlong(prop_array_t, unsigned int,
+					 long long);
+bool		prop_array_set_ulonglong(prop_array_t, unsigned int,
+					 unsigned long long);
+
+bool		prop_array_get_intptr(prop_array_t, unsigned int,
+					 intptr_t *);
+bool		prop_array_get_uintptr(prop_array_t, unsigned int,
+					 uintptr_t *);
+bool		prop_array_set_intptr(prop_array_t, unsigned int,
+					 intptr_t);
+bool		prop_array_set_uintptr(prop_array_t, unsigned int,
+					 uintptr_t);
 
 bool		prop_array_get_int8(prop_array_t, unsigned int,
 					 int8_t *);
@@ -118,6 +169,29 @@ bool		prop_array_set_int64(prop_array_t, unsigned int,
 bool		prop_array_set_uint64(prop_array_t, unsigned int,
 					   uint64_t);
 
+bool		prop_array_set_and_rel(prop_array_t, unsigned int,
+				       prop_object_t);
+
+bool		prop_array_add_bool(prop_array_t, bool);
+
+bool		prop_array_add_schar(prop_array_t, signed char);
+bool		prop_array_add_uchar(prop_array_t, unsigned char);
+
+bool		prop_array_add_short(prop_array_t, short);
+bool		prop_array_add_ushort(prop_array_t, unsigned short);
+
+bool		prop_array_add_int(prop_array_t, int);
+bool		prop_array_add_uint(prop_array_t, unsigned int);
+
+bool		prop_array_add_long(prop_array_t, long);
+bool		prop_array_add_ulong(prop_array_t, unsigned long);
+
+bool		prop_array_add_longlong(prop_array_t, long long);
+bool		prop_array_add_ulonglong(prop_array_t, unsigned long long);
+
+bool		prop_array_add_intptr(prop_array_t, intptr_t);
+bool		prop_array_add_uintptr(prop_array_t, uintptr_t);
+
 bool		prop_array_add_int8(prop_array_t, int8_t);
 bool		prop_array_add_uint8(prop_array_t, uint8_t);
 
@@ -130,21 +204,44 @@ bool		prop_array_add_uint32(prop_array_t, uint32_t);
 bool		prop_array_add_int64(prop_array_t, int64_t);
 bool		prop_array_add_uint64(prop_array_t, uint64_t);
 
+bool		prop_array_get_string(prop_array_t, unsigned int,
+						const char **);
+bool		prop_array_set_string(prop_array_t, unsigned int,
+						const char *);
+bool		prop_array_add_string(prop_array_t, const char *);
+bool		prop_array_set_string_nocopy(prop_array_t, unsigned int,
+						const char *);
+bool		prop_array_add_string_nocopy(prop_array_t, const char *);
+
+bool		prop_array_get_data(prop_array_t, unsigned int,
+					const void **, size_t *);
+bool		prop_array_set_data(prop_array_t, unsigned int,
+					const void *, size_t);
+bool		prop_array_add_data(prop_array_t,
+					const void *, size_t);
+bool		prop_array_set_data_nocopy(prop_array_t, unsigned int,
+					const void *, size_t);
+bool		prop_array_add_data_nocopy(prop_array_t,
+					const void *, size_t);
+
+bool		prop_array_add_and_rel(prop_array_t, prop_object_t);
+
+
+/* Deprecated functions. */
+
+bool		prop_array_add_cstring(prop_array_t, const char *);
 bool		prop_array_get_cstring(prop_array_t, unsigned int,
 					     char **);
 bool		prop_array_set_cstring(prop_array_t, unsigned int,
 					    const char *);
-bool		prop_array_add_cstring(prop_array_t, const char *);
-bool		prop_array_add_cstring_nocopy(prop_array_t,
-						const char *);
+
+bool		prop_array_add_cstring_nocopy(prop_array_t, const char *);
 bool		prop_array_get_cstring_nocopy(prop_array_t,
                                                    unsigned int,
 						   const char **);
 bool		prop_array_set_cstring_nocopy(prop_array_t,
 						   unsigned int,
 						   const char *);
-bool		prop_array_add_and_rel(prop_array_t, prop_object_t);
-
 #ifdef __cplusplus
 }
 #endif

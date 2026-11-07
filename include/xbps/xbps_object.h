@@ -48,6 +48,11 @@ typedef enum {
 	XBPS_TYPE_DICT_KEYSYM	=	0x646b6579	/* 'dkey' */
 } xbps_type_t;
 
+typedef enum {
+	XBPS_PROP_FORMAT_XML = 0,
+	XBPS_PROP_FORMAT_JSON = 1,
+} xbps_prop_format_t;
+
 #ifdef  __cplusplus
 extern "C" {
 #endif
@@ -65,6 +70,15 @@ typedef struct _prop_object_iterator *xbps_object_iterator_t;
 xbps_object_t	xbps_object_iterator_next(xbps_object_iterator_t);
 void		xbps_object_iterator_reset(xbps_object_iterator_t);
 void		xbps_object_iterator_release(xbps_object_iterator_t);
+
+char *		xbps_object_externalize(xbps_object_t);
+char *		xbps_object_externalize_with_format(xbps_object_t, xbps_prop_format_t);
+
+bool		xbps_object_externalize_to_file(xbps_object_t, const char *);
+bool		xbps_object_externalize_to_file_with_format(xbps_object_t, const char *, xbps_prop_format_t);
+
+xbps_object_t	xbps_object_internalize(const char *);
+xbps_object_t	xbps_object_internalize_from_file(const char *);
 
 #ifdef __cplusplus
 }

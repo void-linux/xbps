@@ -1,4 +1,4 @@
-/*	$NetBSD: prop_data.h,v 1.3 2008/04/28 20:22:51 martin Exp $	*/
+/*	$NetBSD: prop_data.h,v 1.4 2020/06/06 21:25:59 thorpej Exp $	*/
 
 /*-
  * Copyright (c) 2006 The NetBSD Foundation, Inc.
@@ -32,9 +32,7 @@
 #ifndef _PROPLIB_PROP_DATA_H_
 #define	_PROPLIB_PROP_DATA_H_
 
-#include <stdint.h>
 #include <prop/prop_object.h>
-#include <sys/types.h>
 
 typedef struct _prop_data *prop_data_t;
 
@@ -42,18 +40,26 @@ typedef struct _prop_data *prop_data_t;
 extern "C" {
 #endif
 
-prop_data_t	prop_data_create_data(const void *, size_t);
-prop_data_t	prop_data_create_data_nocopy(const void *, size_t);
+prop_data_t	prop_data_create_copy(const void *, size_t);
+prop_data_t	prop_data_create_nocopy(const void *, size_t);
 
 prop_data_t	prop_data_copy(prop_data_t);
 
 size_t		prop_data_size(prop_data_t);
 
-void *		prop_data_data(prop_data_t);
-const void *	prop_data_data_nocopy(prop_data_t);
+const void *	prop_data_value(prop_data_t);
+bool		prop_data_copy_value(prop_data_t, void *, size_t);
 
 bool		prop_data_equals(prop_data_t, prop_data_t);
 bool		prop_data_equals_data(prop_data_t, const void *, size_t);
+
+
+/* Deprecated functions. */
+prop_data_t	prop_data_create_data(const void *, size_t);
+prop_data_t	prop_data_create_data_nocopy(const void *, size_t);
+
+void *		prop_data_data(prop_data_t);
+const void *	prop_data_data_nocopy(prop_data_t);
 
 #ifdef __cplusplus
 }

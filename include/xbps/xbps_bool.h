@@ -45,6 +45,7 @@ xbps_bool_t	xbps_bool_create(bool);
 xbps_bool_t	xbps_bool_copy(xbps_bool_t);
 
 bool		xbps_bool_true(xbps_bool_t);
+bool		xbps_bool_value(xbps_bool_t);
 
 bool		xbps_bool_equals(xbps_bool_t, xbps_bool_t);
 

@@ -32,8 +32,11 @@
 #ifndef _XBPS_DATA_H_
 #define	_XBPS_DATA_H_
 
-#include <stdint.h>
 #include <sys/types.h>
+
+#include <stdint.h>
+
+#include <xbps/macro.h>
 #include <xbps/xbps_object.h>
 
 typedef struct _prop_data *xbps_data_t;
@@ -42,18 +45,26 @@ typedef struct _prop_data *xbps_data_t;
 extern "C" {
 #endif
 
-xbps_data_t	xbps_data_create_data(const void *, size_t);
-xbps_data_t	xbps_data_create_data_nocopy(const void *, size_t);
+xbps_data_t	xbps_data_create_copy(const void *, size_t);
+xbps_data_t	xbps_data_create_nocopy(const void *, size_t);
 
 xbps_data_t	xbps_data_copy(xbps_data_t);
 
 size_t		xbps_data_size(xbps_data_t);
 
-void *		xbps_data_data(xbps_data_t);
-const void *	xbps_data_data_nocopy(xbps_data_t);
+const void *	xbps_data_value(xbps_data_t);
+bool		xbps_data_copy_value(xbps_data_t, void *, size_t);
 
 bool		xbps_data_equals(xbps_data_t, xbps_data_t);
 bool		xbps_data_equals_data(xbps_data_t, const void *, size_t);
+
+
+/* Deprecated functions. */
+xbps_data_t	xbps_data_create_data(const void *, size_t) DEPRECATED;
+xbps_data_t	xbps_data_create_data_nocopy(const void *, size_t) DEPRECATED;
+
+void *		xbps_data_data(xbps_data_t) DEPRECATED;
+const void *	xbps_data_data_nocopy(xbps_data_t) DEPRECATED;
 
 #ifdef __cplusplus
 }

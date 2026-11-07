@@ -388,11 +388,12 @@ func=atomic
 printf "Checking for GCC atomic builtins ... "
 cat <<EOF >_$func.c
 int main() {
-	volatile unsigned long val = 1;
-	__sync_fetch_and_add(&val, 1);
-	__sync_fetch_and_sub(&val, 1);
-	__sync_add_and_fetch(&val, 1);
-	__sync_sub_and_fetch(&val, 1);
+	unsigned long val = 1;
+	__atomic_load_n(&val, __ATOMIC_RELAXED);
+	__atomic_fetch_add(&val, 1, __ATOMIC_RELAXED);
+	__atomic_fetch_sub(&val, 1, __ATOMIC_RELEASE);
+	__atomic_add_fetch(&val, 1, __ATOMIC_RELAXED);
+	__atomic_sub_fetch(&val, 1, __ATOMIC_ACQ_REL);
 	return 0;
 }
 EOF

@@ -14,8 +14,9 @@ LIBPROP_OBJS += portableproplib/prop_dictionary.o portableproplib/prop_ingest.o
 LIBPROP_OBJS += portableproplib/prop_object.o
 LIBPROP_OBJS += portableproplib/prop_stack.o portableproplib/prop_string.o
 LIBPROP_OBJS += portableproplib/prop_array_util.o portableproplib/prop_number.o
-LIBPROP_OBJS += portableproplib/prop_dictionary_util.o portableproplib/prop_zlib.o
+LIBPROP_OBJS += portableproplib/prop_dictionary_util.o
 LIBPROP_OBJS += portableproplib/prop_data.o
+LIBPROP_OBJS += portableproplib/prop_intern.o portableproplib/prop_extern.o
 LIBPROP_CFLAGS = -Wno-unused-parameter
 ifdef HAVE_VISIBILITY
 LIBPROP_CFLAGS += -fvisibility=hidden

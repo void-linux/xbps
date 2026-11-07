@@ -1,7 +1,7 @@
-/*	$NetBSD: prop_object_impl.h,v 1.31 2012/07/27 09:10:59 pooka Exp $	*/
+/*	$NetBSD: prop_object_impl.h,v 1.42 2026/04/19 19:20:59 rillig Exp $	*/
 
 /*-
- * Copyright (c) 2006 The NetBSD Foundation, Inc.
+ * Copyright (c) 2006, 2020, 2025 The NetBSD Foundation, Inc.
  * All rights reserved.
  *
  * This code is derived from software contributed to The NetBSD Foundation
@@ -33,42 +33,57 @@
 #define	_PROPLIB_PROP_OBJECT_IMPL_H_
 
 #include <inttypes.h>
+
 #include "prop_stack.h"
+
+struct _prop_object;
 
 struct _prop_object_externalize_context {
 	char *		poec_buf;		/* string buffer */
 	size_t		poec_capacity;		/* capacity of buffer */
 	size_t		poec_len;		/* current length of string */
 	unsigned int	poec_depth;		/* nesting depth */
+	prop_format_t	poec_format;		/* output format */
 };
 
-bool		_prop_object_externalize_start_tag(
-				struct _prop_object_externalize_context *,
-				const char *);
-bool		_prop_object_externalize_end_tag(
-				struct _prop_object_externalize_context *,
-				const char *);
-bool		_prop_object_externalize_empty_tag(
-				struct _prop_object_externalize_context *,
-				const char *);
-bool		_prop_object_externalize_append_cstring(
-				struct _prop_object_externalize_context *,
-				const char *);
-bool		_prop_object_externalize_append_encoded_cstring(
-				struct _prop_object_externalize_context *,
-				const char *);
-bool		_prop_object_externalize_append_char(
+struct _prop_object_type_tags {
+	const char	*xml_tag;
+	const char	*json_open_tag;
+	const char	*json_close_tag;
+	const char	*json_empty_sep;
+};
+
+bool		_prop_extern_append_char(
 				struct _prop_object_externalize_context *,
 				unsigned char);
-bool		_prop_object_externalize_header(
+bool		_prop_extern_append_cstring(
+				struct _prop_object_externalize_context *,
+				const char *);
+bool		_prop_extern_start_line(
 				struct _prop_object_externalize_context *);
-bool		_prop_object_externalize_footer(
-				struct _prop_object_externalize_context *);
+bool		_prop_extern_end_line(
+				struct _prop_object_externalize_context *,
+				const char *);
 
-struct _prop_object_externalize_context *
-	_prop_object_externalize_context_alloc(void);
-void	_prop_object_externalize_context_free(
-				struct _prop_object_externalize_context *);
+bool		_prop_extern_append_start_tag(
+				struct _prop_object_externalize_context *,
+				const struct _prop_object_type_tags *,
+				const char *);
+bool		_prop_extern_append_end_tag(
+				struct _prop_object_externalize_context *,
+				const struct _prop_object_type_tags *);
+bool		_prop_extern_append_empty_tag(
+				struct _prop_object_externalize_context *,
+				const struct _prop_object_type_tags *);
+
+bool		_prop_extern_append_encoded_cstring(
+				struct _prop_object_externalize_context *,
+				const char *);
+
+bool		_prop_object_externalize_to_file(struct _prop_object *,
+				const char *, prop_format_t);
+char *		_prop_object_externalize(struct _prop_object *,
+				prop_format_t fmt);
 
 typedef enum {
 	_PROP_TAG_TYPE_START,			/* e.g. <dict> */
@@ -77,7 +92,9 @@ typedef enum {
 } _prop_tag_type_t;
 
 struct _prop_object_internalize_context {
-	const char *poic_xml;
+	prop_format_t poic_format;
+
+	const char *poic_data;
 	const char *poic_cp;
 
 	const char *poic_tag_start;
@@ -109,50 +126,36 @@ typedef enum {
 #define	_PROP_ISSPACE(c)	\
 	((c) == ' ' || (c) == '\t' || (c) == '\n' || (c) == '\r')
 
-#define	_PROP_TAG_MATCH(ctx, t)					\
-	_prop_object_internalize_match((ctx)->poic_tagname,	\
-				       (ctx)->poic_tagname_len,	\
-				       (t), strlen(t))
+#define	_PROP_TAG_MATCH(ctx, t)				\
+	_prop_intern_match((ctx)->poic_tagname,		\
+			   (ctx)->poic_tagname_len,	\
+			   (t), strlen(t))
 
-#define	_PROP_TAGATTR_MATCH(ctx, a)				\
-	_prop_object_internalize_match((ctx)->poic_tagattr,	\
-				       (ctx)->poic_tagattr_len,	\
-				       (a), strlen(a))
+#define	_PROP_TAGATTR_MATCH(ctx, a)			\
+	_prop_intern_match((ctx)->poic_tagattr,		\
+			   (ctx)->poic_tagattr_len,	\
+			   (a), strlen(a))
 
-#define	_PROP_TAGATTRVAL_MATCH(ctx, a)				  \
-	_prop_object_internalize_match((ctx)->poic_tagattrval,	  \
-				       (ctx)->poic_tagattrval_len,\
-				       (a), strlen(a))
+#define	_PROP_TAGATTRVAL_MATCH(ctx, a)			\
+	_prop_intern_match((ctx)->poic_tagattrval,	\
+			   (ctx)->poic_tagattrval_len,	\
+			   (a), strlen(a))
 
-bool		_prop_object_internalize_find_tag(
-				struct _prop_object_internalize_context *,
-				const char *, _prop_tag_type_t);
-bool		_prop_object_internalize_match(const char *, size_t,
-					       const char *, size_t);
-prop_object_t	_prop_object_internalize_by_tag(
-				struct _prop_object_internalize_context *);
-bool		_prop_object_internalize_decode_string(
+const char *	_prop_intern_skip_whitespace(const char *);
+bool		_prop_intern_match(const char *, size_t, const char *, size_t);
+
+bool		_prop_intern_decode_string(
 				struct _prop_object_internalize_context *,
 				char *, size_t, size_t *, const char **);
-prop_object_t	_prop_generic_internalize(const char *, const char *);
 
-struct _prop_object_internalize_context *
-		_prop_object_internalize_context_alloc(const char *);
-void		_prop_object_internalize_context_free(
-				struct _prop_object_internalize_context *);
+bool		_prop_xml_intern_find_tag(
+				struct _prop_object_internalize_context *,
+				const char *, _prop_tag_type_t);
 
-bool		_prop_object_externalize_write_file(const char *,
-						    const char *, size_t, bool);
-
-struct _prop_object_internalize_mapped_file {
-	char *	poimf_xml;
-	size_t	poimf_mapsize;
-};
-
-struct _prop_object_internalize_mapped_file *
-		_prop_object_internalize_map_file(const char *);
-void		_prop_object_internalize_unmap_file(
-				struct _prop_object_internalize_mapped_file *);
+prop_object_t	_prop_object_internalize(const char *,
+				const struct _prop_object_type_tags *);
+prop_object_t	_prop_object_internalize_from_file(const char *,
+				const struct _prop_object_type_tags *);
 
 typedef bool (*prop_object_internalizer_t)(prop_stack_t, prop_object_t *,
 				struct _prop_object_internalize_context *);
@@ -174,6 +177,11 @@ bool		_prop_number_internalize(prop_stack_t, prop_object_t *,
 				struct _prop_object_internalize_context *);
 bool		_prop_string_internalize(prop_stack_t, prop_object_t *,
 				struct _prop_object_internalize_context *);
+
+bool		_prop_string_externalize_internal(
+				struct _prop_object_externalize_context *,
+				const struct _prop_object_type_tags *,
+				const char *);
 
 struct _prop_object_type {
 	/* type indicator */
@@ -242,7 +250,7 @@ struct _prop_object_iterator {
 #include <stdlib.h>
 #include <stddef.h>
 
-#define	_PROP_ASSERT(x)			/*LINTED*/assert(x)
+#define	_PROP_ASSERT(x)			assert(x)
 
 #define	_PROP_MALLOC(s, t)		malloc((s))
 #define	_PROP_CALLOC(s, t)		calloc(1, (s))
@@ -256,6 +264,56 @@ struct _prop_object_iterator {
 
 #define	_PROP_MALLOC_DEFINE(t, s, l)	/* nothing */
 
+#if defined(HAVE_ATOMICS)
+#include <pthread.h>
+#define	_PROP_MUTEX_DECL_STATIC(x)	static pthread_mutex_t x;
+#define	_PROP_MUTEX_INIT(x)		pthread_mutex_init(&(x), NULL)
+#define	_PROP_MUTEX_LOCK(x)		pthread_mutex_lock(&(x))
+#define	_PROP_MUTEX_UNLOCK(x)		pthread_mutex_unlock(&(x))
+
+#define	_PROP_RWLOCK_DECL(x)		pthread_rwlock_t x ;
+#define	_PROP_RWLOCK_INIT(x)		pthread_rwlock_init(&(x), NULL)
+#define	_PROP_RWLOCK_RDLOCK(x)		pthread_rwlock_rdlock(&(x))
+#define	_PROP_RWLOCK_WRLOCK(x)		pthread_rwlock_wrlock(&(x))
+#define	_PROP_RWLOCK_UNLOCK(x)		pthread_rwlock_unlock(&(x))
+#define	_PROP_RWLOCK_DESTROY(x)		pthread_rwlock_destroy(&(x))
+
+#define _PROP_ONCE_DECL(x)						\
+	static pthread_once_t x = PTHREAD_ONCE_INIT;
+#define _PROP_ONCE_RUN(x,f)		pthread_once(&(x),(void(*)(void))f)
+
+#define _PROP_ATOMIC_LOAD(x)		__atomic_load_n((x), __ATOMIC_RELAXED)
+#define _PROP_ATOMIC_INC32(x)		__atomic_fetch_add((x), 1, __ATOMIC_RELAXED)
+#define _PROP_ATOMIC_DEC32(x)		__atomic_fetch_sub((x), 1, __ATOMIC_RELEASE)
+#define _PROP_ATOMIC_INC32_NV(x, v)	(v) = __atomic_add_fetch((x), 1, __ATOMIC_RELAXED)
+#define _PROP_ATOMIC_DEC32_NV(x, v)	(v) = __atomic_sub_fetch((x), 1, __ATOMIC_ACQ_REL)
+
+#elif defined(HAVE_NBTOOL_CONFIG_H)
+/*
+ * None of NetBSD's build tools are multi-threaded.
+ */
+#define	_PROP_MUTEX_DECL_STATIC(x)	/* nothing */
+#define	_PROP_MUTEX_INIT(x)		/* nothing */
+#define	_PROP_MUTEX_LOCK(x)		/* nothing */
+#define	_PROP_MUTEX_UNLOCK(x)		/* nothing */
+
+#define	_PROP_RWLOCK_DECL(x)		/* nothing */
+#define	_PROP_RWLOCK_INIT(x)		/* nothing */
+#define	_PROP_RWLOCK_RDLOCK(x)		/* nothing */
+#define	_PROP_RWLOCK_WRLOCK(x)		/* nothing */
+#define	_PROP_RWLOCK_UNLOCK(x)		/* nothing */
+#define	_PROP_RWLOCK_DESTROY(x)		/* nothing */
+
+#define _PROP_ONCE_DECL(x)		_PROP_NOTHREAD_ONCE_DECL(x)
+#define _PROP_ONCE_RUN(x,f)		_PROP_NOTHREAD_ONCE_RUN(x,f)
+
+#define	_PROP_ATOMIC_LOAD(x)		*(x)
+#define _PROP_ATOMIC_INC32(x)		++*(x)
+#define _PROP_ATOMIC_DEC32(x)		--*(x)
+#define _PROP_ATOMIC_INC32_NV(x, v)	v = ++*(x)
+#define _PROP_ATOMIC_DEC32_NV(x, v)	v = --*(x)
+
+#else
 /*
  * Use pthread mutexes everywhere else.
  */
@@ -276,61 +334,60 @@ struct _prop_object_iterator {
 	static pthread_once_t x = PTHREAD_ONCE_INIT;
 #define _PROP_ONCE_RUN(x,f)		pthread_once(&(x),(void(*)(void))f)
 
-#ifndef HAVE_ATOMICS /* NO ATOMIC SUPPORT, USE A MUTEX */
-
 #define _PROP_NEED_REFCNT_MTX
-#define _PROP_ATOMIC_INC32(x) \
-	do { \
-		pthread_mutex_lock(&_prop_refcnt_mtx); \
-		(*(x))++; \
-		pthread_mutex_unlock(&_prop_refcnt_mtx); \
-	} while (/*CONSTCOND*/0)
-#define _PROP_ATOMIC_DEC32(x) \
-	do { \
-		pthread_mutex_lock(&_prop_refcnt_mtx); \
-		(*(x))--; \
-		pthread_mutex_unlock(&_prop_refcnt_mtx); \
-	} while (/*CONSTCOND*/0)
-#define _PROP_ATOMIC_INC32_NV(x, v) \
-	do { \
-		pthread_mutex_lock(&_prop_refcnt_mtx); \
-		v = ++(*(x)); \
-		pthread_mutex_unlock(&_prop_refcnt_mtx); \
-	} while (/*CONSTCOND*/0)
-#define _PROP_ATOMIC_DEC32_NV(x, v) \
-	do { \
-		pthread_mutex_lock(&_prop_refcnt_mtx); \
-		v = --(*(x)); \
-		pthread_mutex_unlock(&_prop_refcnt_mtx); \
-	} while (/*CONSTCOND*/0)
 
-#else /* GCC ATOMIC BUILTINS */
+#define	_PROP_ATOMIC_LOAD(x)		*(x)
 
 #define _PROP_ATOMIC_INC32(x)						\
 do {									\
-	(void)__sync_fetch_and_add(x, 1);				\
+	pthread_mutex_lock(&_prop_refcnt_mtx);				\
+	(*(x))++;							\
+	pthread_mutex_unlock(&_prop_refcnt_mtx);			\
 } while (/*CONSTCOND*/0)
 
 #define _PROP_ATOMIC_DEC32(x)						\
 do {									\
-	(void)__sync_fetch_and_sub(x, 1);				\
+	pthread_mutex_lock(&_prop_refcnt_mtx);				\
+	(*(x))--;							\
+	pthread_mutex_unlock(&_prop_refcnt_mtx);			\
 } while (/*CONSTCOND*/0)
 
 #define _PROP_ATOMIC_INC32_NV(x, v)					\
 do {									\
-	v = __sync_add_and_fetch(x, 1);					\
+	pthread_mutex_lock(&_prop_refcnt_mtx);				\
+	v = ++(*(x));							\
+	pthread_mutex_unlock(&_prop_refcnt_mtx);			\
 } while (/*CONSTCOND*/0)
 
 #define _PROP_ATOMIC_DEC32_NV(x, v)					\
 do {									\
-	v = __sync_sub_and_fetch(x, 1);					\
+	pthread_mutex_lock(&_prop_refcnt_mtx);				\
+	v = --(*(x));							\
+	pthread_mutex_unlock(&_prop_refcnt_mtx);			\
 } while (/*CONSTCOND*/0)
 
-#endif /* !HAVE_ATOMICS */
+#endif
+
+#ifndef _PROP_EXPORT
+#define	_PROP_EXPORT			/* nothing */
+#endif
 
 /*
  * Language features.
  */
-#define	_PROP_ARG_UNUSED		__attribute__((unused))
+#if defined(__NetBSD__)
+#include <sys/cdefs.h>
+#define	_PROP_ARG_UNUSED		__unused
+#if defined(__clang__)
+#define	_PROP_DEPRECATED(s, m)		/* delete */
+#else /* ! __clang__ */
+#define	_PROP_DEPRECATED(s, m)		__warn_references(s, m)
+#endif /* __clang__ */
+#define	_PROP_UNCONST(x)		__UNCONST(x)
+#else
+#define	_PROP_ARG_UNUSED		/* delete */
+#define	_PROP_DEPRECATED(s, m)		/* delete */
+#define	_PROP_UNCONST(x)	((void *)(unsigned long)(const void *)(x))
+#endif /* __NetBSD__ */
 
 #endif /* _PROPLIB_PROP_OBJECT_IMPL_H_ */

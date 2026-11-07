@@ -3,8 +3,12 @@
 
 #define ARRAY_SIZE(x) (sizeof((x)) / sizeof((x))[0])
 
-#define MIN(a, b) (((a) < (b)) ? (a) : (b))
-#define MAX(a, b) (((a) > (b)) ? (a) : (b))
+#ifndef MIN
+# define MIN(a, b) (((a) < (b)) ? (a) : (b))
+#endif
+#ifndef MAX
+# define MAX(a, b) (((a) > (b)) ? (a) : (b))
+#endif
 
 #if __has_builtin(__builtin_imaxabs)
 # define ABS(x) __builtin_imaxabs((x))
@@ -31,5 +35,11 @@
 #define strneq(a, b, n)     (strncmp((a), (b), (n)) == 0)
 #define strcaseeq(a, b)     (strcasecmp((a), (b)) == 0)
 #define strcaseneq(a, b, n) (strcasencmp((a), (b), (n)) == 0)
+
+#if __has_attribute(deprecated)
+# define DEPRECATED __attribute__ ((deprecated))
+#else
+# define DEPRECATED /* deprecated */
+#endif
 
 #endif /* !_XBPS_MACRO_H */
