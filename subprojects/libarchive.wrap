@@ -1,0 +1,13 @@
+[wrap-file]
+directory = libarchive-3.7.7
+source_url = https://github.com/libarchive/libarchive/releases/download/v3.7.7/libarchive-3.7.7.tar.xz
+source_filename = libarchive-3.7.7.tar.xz
+source_hash = 879acd83c3399c7caaee73fe5f7418e06087ab2aaf40af3e99b9e29beb29faee
+patch_filename = libarchive_3.7.7-1_patch.zip
+patch_url = https://wrapdb.mesonbuild.com/v2/libarchive_3.7.7-1/get_patch
+patch_hash = 52f3f4b4f7ee8af27350bdbe21a726b6183d2a872a9ee7dfcc3f752022a70817
+source_fallback_url = https://github.com/mesonbuild/wrapdb/releases/download/libarchive_3.7.7-1/libarchive-3.7.7.tar.xz
+wrapdb_version = 3.7.7-1
+
+[provide]
+libarchive = libarchive_dep
