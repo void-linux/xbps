@@ -168,14 +168,14 @@ sign_repo(struct xbps_handle *xhp, const char *repodir,
 	 */
 	repo = xbps_repo_open(xhp, repodir);
 	if (repo == NULL) {
-		r = -errno;
-		xbps_error_printf("%s: cannot read repository data: %s\n",
-		    _XBPS_RINDEX, strerror(errno));
+		r = xbps_error_errno(errno,
+		    "%s: cannot read repository data: %s\n", _XBPS_RINDEX,
+		    strerror(errno));
 		goto out;
 	}
 	if (xbps_dictionary_count(repo->idx) == 0) {
-		r = -EINVAL;
-		xbps_error_printf("%s: invalid repository, exiting!\n", _XBPS_RINDEX);
+		r = xbps_error_errno(
+		    EINVAL, "%s: invalid repository, exiting!\n", _XBPS_RINDEX);
 		goto out;
 	}
 
@@ -193,11 +193,15 @@ sign_repo(struct xbps_handle *xhp, const char *repodir,
 
 	meta = xbps_dictionary_create();
 	if (!meta) {
-		r = -ENOMEM;
+		r = xbps_error_oom();
 		goto out;
 	}
 
 	data = xbps_data_create_data(buf, strlen(buf));
+	if (!data) {
+		r = xbps_error_oom();
+		goto out;
+	}
 	rpubkey = xbps_dictionary_get(repo->idxmeta, "public-key");
 	if (!xbps_data_equals(rpubkey, data))
 		flush = true;

@@ -274,7 +274,6 @@ index_add_pkg(struct xbps_handle *xhp, xbps_dictionary_t index, xbps_dictionary_
 	if (!xbps_dictionary_set_uint64(binpkgd, "filename-size", (uint64_t)st.st_size))
 		goto err_errno;
 
-	xbps_dictionary_remove(binpkgd, "pkgname");
 	xbps_dictionary_remove(binpkgd, "version");
 	xbps_dictionary_remove(binpkgd, "packaged-with");
 

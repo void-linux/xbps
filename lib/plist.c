@@ -26,7 +26,6 @@
 #include <errno.h>
 #include <pthread.h>
 #include <stdbool.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -243,64 +242,4 @@ xbps_array_iter_from_dict(xbps_dictionary_t dict, const char *key)
 	}
 
 	return xbps_array_iterator(array);
-}
-
-static int
-array_replace_dict(xbps_array_t array,
-		   xbps_dictionary_t dict,
-		   const char *str,
-		   bool bypattern)
-{
-	xbps_object_t obj;
-	const char *pkgver, *pkgname;
-
-	assert(xbps_object_type(array) == XBPS_TYPE_ARRAY);
-	assert(xbps_object_type(dict) == XBPS_TYPE_DICTIONARY);
-	assert(str != NULL);
-
-	for (unsigned int i = 0; i < xbps_array_count(array); i++) {
-		obj = xbps_array_get(array, i);
-		if (obj == NULL) {
-			continue;
-		}
-		if (!xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver)) {
-			continue;
-		}
-		if (bypattern) {
-			/* pkgpattern match */
-			if (xbps_pkgpattern_match(pkgver, str)) {
-				if (!xbps_array_set(array, i, dict)) {
-					return EINVAL;
-				}
-				return 0;
-			}
-		} else {
-			/* pkgname match */
-			xbps_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
-			if (strcmp(pkgname, str) == 0) {
-				if (!xbps_array_set(array, i, dict)) {
-					return EINVAL;
-				}
-				return 0;
-			}
-		}
-	}
-	/* no match */
-	return ENOENT;
-}
-
-int HIDDEN
-xbps_array_replace_dict_by_name(xbps_array_t array,
-				xbps_dictionary_t dict,
-				const char *pkgver)
-{
-	return array_replace_dict(array, dict, pkgver, false);
-}
-
-int HIDDEN
-xbps_array_replace_dict_by_pattern(xbps_array_t array,
-				   xbps_dictionary_t dict,
-				   const char *pattern)
-{
-	return array_replace_dict(array, dict, pattern, true);
 }

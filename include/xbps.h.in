@@ -1419,19 +1419,6 @@ typedef enum xbps_trans_type {
  */
 xbps_trans_type_t xbps_transaction_pkg_type(xbps_dictionary_t pkg_repod);
 
-/**
- * Sets the transaction type associated with \a pkg_repod.
- *
- * See \a xbps_trans_type_t for possible values.
- *
- * @param[in] pkg_repod Package dictionary stored in a repository.
- * @param[in] type The transaction type to set.
- *
- * @return Returns true on success, false otherwise.
- */
-
-bool xbps_transaction_pkg_type_set(xbps_dictionary_t pkg_repod, xbps_trans_type_t type);
-
 /**@}*/
 
 /** @addtogroup plist_fetch */
