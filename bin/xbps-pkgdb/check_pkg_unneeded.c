@@ -25,10 +25,7 @@
 
 #include <sys/param.h>
 
-#include <stdio.h>
 #include <stdbool.h>
-#include <stdlib.h>
-#include <string.h>
 #include <assert.h>
 #include <unistd.h>
 
@@ -43,11 +40,9 @@
  * 	  and remove them if that was true.
  */
 int
-check_pkg_unneeded(struct xbps_handle *xhp UNUSED, const char *pkgname, xbps_dictionary_t pkgd)
+check_pkg_unneeded(struct xbps_handle *xhp UNUSED, const char *pkgname UNUSED, xbps_dictionary_t pkgd)
 {
-	xbps_array_t replaces;
 	const char *repo = NULL;
-	char *buf;
 
 	xbps_dictionary_remove(pkgd, "download");
 	xbps_dictionary_remove(pkgd, "remove-and-update");
@@ -57,16 +52,6 @@ check_pkg_unneeded(struct xbps_handle *xhp UNUSED, const char *pkgname, xbps_dic
 	if (xbps_dictionary_get_cstring_nocopy(pkgd, "repository-origin", &repo)) {
 		xbps_dictionary_set_cstring(pkgd, "repository", repo);
 		xbps_dictionary_remove(pkgd, "repository-origin");
-	}
-	/*
-	 * Remove self replacement when applicable.
-	 */
-	if ((replaces = xbps_dictionary_get(pkgd, "replaces"))) {
-		buf = xbps_xasprintf("%s>=0", pkgname);
-		xbps_remove_string_from_array(replaces, buf);
-		free(buf);
-		if (!xbps_array_count(replaces))
-			xbps_dictionary_remove(pkgd, "replaces");
 	}
 
 	return 0;

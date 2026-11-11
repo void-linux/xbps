@@ -23,7 +23,6 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
@@ -34,7 +33,6 @@
 int HIDDEN
 xbps_register_pkg(struct xbps_handle *xhp, xbps_dictionary_t pkgrd)
 {
-	xbps_array_t replaces;
 	xbps_dictionary_t pkgd;
 	time_t t;
 	struct tm tm, *tmp;
@@ -90,16 +88,6 @@ xbps_register_pkg(struct xbps_handle *xhp, xbps_dictionary_t pkgrd)
 		xbps_dictionary_set_cstring(pkgd, "metafile-sha256", sha256);
 	}
 	free(buf);
-	/*
-	 * Remove self replacement when applicable.
-	 */
-	if ((replaces = xbps_dictionary_get(pkgd, "replaces"))) {
-		buf = xbps_xasprintf("%s>=0", pkgname);
-		xbps_remove_string_from_array(replaces, buf);
-		free(buf);
-		if (!xbps_array_count(replaces))
-			xbps_dictionary_remove(pkgd, "replaces");
-	}
 	/*
 	 * Remove unneeded objs from pkg dictionary.
 	 */

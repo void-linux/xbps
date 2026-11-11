@@ -23,10 +23,7 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <errno.h>
 
 #include "xbps_api_impl.h"
 
@@ -35,9 +32,7 @@ xbps_transaction_store(struct xbps_handle *xhp, xbps_array_t pkgs,
 		xbps_dictionary_t pkgrd, bool autoinst)
 {
 	xbps_dictionary_t d, pkgd;
-	xbps_array_t replaces;
 	const char *pkgver, *pkgname, *curpkgver, *repo;
-	char *self_replaced;
 	int rv;
 
 	assert(xhp);
@@ -79,19 +74,6 @@ xbps_transaction_store(struct xbps_handle *xhp, xbps_array_t pkgs,
 	 * Add required objects into package dep's dictionary.
 	 */
 	if (autoinst && !xbps_dictionary_set_bool(pkgd, "automatic-install", true))
-		goto err;
-
-	/*
-	 * Set a replaces to itself, so that virtual packages are always replaced.
-	*/
-	if ((replaces = xbps_dictionary_get(pkgd, "replaces")) == NULL)
-		replaces = xbps_array_create();
-
-	self_replaced = xbps_xasprintf("%s>=0", pkgname);
-	xbps_array_add_cstring(replaces, self_replaced);
-	free(self_replaced);
-
-	if (!xbps_dictionary_set(pkgd, "replaces", replaces))
 		goto err;
 
 	/*
