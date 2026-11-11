@@ -753,6 +753,8 @@ http_connect(struct url *URL, struct url *purl, const char *flags, int *cached)
 	if (strcasecmp(URL->scheme, SCHEME_HTTPS) == 0 && purl) {
 		http_cmd(conn, "CONNECT %s:%d HTTP/1.1\r\n",
 		    URL->host, URL->port);
+		http_cmd(conn, "Host: %s:%d\r\n",
+		    URL->host, URL->port);
 
 		send_proxy_headers(conn, purl);
 
