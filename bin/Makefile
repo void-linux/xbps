@@ -14,6 +14,7 @@ SUBDIRS +=	xbps-checkvers
 SUBDIRS +=	xbps-fbulk
 SUBDIRS +=	xbps-digest
 SUBDIRS +=	xbps-fetch
+SUBDIRS +=	xbps-repodb
 
 ifeq (${XBPS_OS},linux)
 SUBDIRS +=	xbps-uchroot
