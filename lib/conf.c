@@ -204,6 +204,7 @@ enum {
 	KEY_ARCHITECTURE,
 	KEY_BESTMATCHING,
 	KEY_CACHEDIR,
+	KEY_FETCHJOBS,
 	KEY_IGNOREPKG,
 	KEY_INCLUDE,
 	KEY_NOEXTRACT,
@@ -224,6 +225,7 @@ static const struct key {
 	{ "architecture", 12, KEY_ARCHITECTURE },
 	{ "bestmatching", 12, KEY_BESTMATCHING },
 	{ "cachedir",      8, KEY_CACHEDIR },
+	{ "fetch_jobs", 10, KEY_FETCHJOBS },
 	{ "ignorepkg",     9, KEY_IGNOREPKG },
 	{ "include",       7, KEY_INCLUDE },
 	{ "keepconf",      8, KEY_KEEPCONF },
@@ -460,6 +462,12 @@ parse_file(struct xbps_handle *xhp, const char *path, bool nested)
 			dir = strdup(path);
 			rv = parse_files_glob(xhp, NULL, dirname(dir), val, true);
 			free(dir);
+			break;
+		case KEY_FETCHJOBS:
+			xhp->fetch_jobs = strtoul(val, NULL, 10);
+			if (xhp->fetch_jobs == 0)
+				xhp->fetch_jobs = 1;
+			xbps_dbg_printf("%s: fetch_jobs set to %u\n", path, xhp->fetch_jobs);
 			break;
 		}
 	}

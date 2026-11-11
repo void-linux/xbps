@@ -1,3 +1,8 @@
+ * xbps-install: add support for parallel downloads when fetching
+  binary packages. The number of parallel jobs can be configured
+  with the --parallel-download option or the fetch_jobs setting
+  in xbps.conf.
+
 xbps-0.60.7 (2026-02-09):
 
  * xbps-query(1): fix off-by-one error in list ellipsis. [@kkmisiaszek]
