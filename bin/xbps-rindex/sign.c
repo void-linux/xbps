@@ -150,7 +150,7 @@ sign_repo(struct xbps_handle *xhp, const char *repodir,
 	xbps_dictionary_t meta = NULL;
 	xbps_data_t data = NULL, rpubkey = NULL;
 	RSA *rsa = NULL;
-	uint16_t rpubkeysize, pubkeysize;
+	uint16_t rpubkeysize = 0, pubkeysize = 0;
 	const char *rsignedby = NULL;
 	char *buf = NULL;
 	int lockfd = -1;
