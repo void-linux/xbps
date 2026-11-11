@@ -127,5 +127,7 @@ xbps_array_t HIDDEN xbps_get_pkg_fulldeptree(struct xbps_handle *,
 struct xbps_repo HIDDEN *xbps_regget_repo(struct xbps_handle *,
 		const char *);
 int HIDDEN xbps_conf_init(struct xbps_handle *);
+int HIDDEN xbps_parse_alternative(char *alternative, const char *rootdir,
+		char **linkpath, char **dir, char **target);
 
 #endif /* !_XBPS_API_IMPL_H_ */
