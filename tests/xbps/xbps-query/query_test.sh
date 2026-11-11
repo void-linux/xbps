@@ -175,10 +175,96 @@ show_prop_body() {
 		xbps-query -r root --property pkgver bar-1.0_1
 }
 
+atf_test_case repo_revdeps
+
+repo_revdeps_head() {
+	atf_set "descr" "xbps-query(1) -RX includes reverse dependencies from multiple repositories"
+}
+
+repo_revdeps_body() {
+	mkdir -p root repo1 repo2 pkg_foo1 pkg_foo2 pkg_consumer1 pkg_consumer2
+
+	cd repo1
+	atf_check -o ignore -- xbps-create -A noarch -n foo-1.0_1 -s "foo pkg" ../pkg_foo1
+	atf_check -o ignore -- xbps-create -A noarch -n consumer-first-1.0_1 -s "consumer first" -D "foo>=0" ../pkg_consumer1
+	atf_check -o ignore -- xbps-rindex -a $PWD/*.xbps
+	cd ..
+
+	cd repo2
+	atf_check -o ignore -- xbps-create -A noarch -n foo-1.0_1 -s "foo pkg" ../pkg_foo2
+	atf_check -o ignore -- xbps-create -A noarch -n consumer-second-1.0_1 -s "consumer second" -D "foo>=0" ../pkg_consumer2
+	atf_check -o ignore -- xbps-rindex -a $PWD/*.xbps
+	cd ..
+
+	atf_check -o inline:"consumer-first-1.0_1\nconsumer-second-1.0_1\n" -- \
+		xbps-query -r root -C empty.conf --repository=repo1 --repository=repo2 -RX foo
+}
+
+atf_test_case repo_revdeps_override
+
+repo_revdeps_override_head() {
+	atf_set "descr" "xbps-query(1) -RX ignores overridden reverse dependencies"
+}
+
+repo_revdeps_override_body() {
+	mkdir -p root repo1 repo2 pkg
+
+	cd repo1
+	atf_check -o ignore -- xbps-create -A noarch -n foo-1.0_1 \
+		-s "foo pkg" -P "virtual-1.0_1" ../pkg
+	atf_check -o ignore -- xbps-create -A noarch -n bar-1.0_1 \
+		-s "bar pkg" -D "foo>=0" ../pkg
+	atf_check -o ignore -- xbps-create -A noarch -n baz-1.0_1 -s "baz pkg" ../pkg
+	atf_check -o ignore -- xbps-rindex -a $PWD/*.xbps
+	cd ../repo2
+	atf_check -o ignore -- xbps-create -A noarch -n foo-1.0_1 \
+		-s "foo pkg" -P "virtual-1.0_1" ../pkg
+	atf_check -o ignore -- xbps-create -A noarch -n bar-2.0_1 \
+		-s "bar pkg" -D "foo>=0" ../pkg
+	atf_check -o ignore -- xbps-create -A noarch -n baz-1.0_1 \
+		-s "baz pkg" -D "virtual>=0" ../pkg
+	atf_check -o ignore -- xbps-create -A noarch -n other-1.0_1 \
+		-s "other pkg" -D "virtual>=0" ../pkg
+	atf_check -o ignore -- xbps-rindex -a $PWD/*.xbps
+	cd ..
+
+	# The older bar takes precedence; baz has the same version but no dependency.
+	atf_check -o inline:"bar-1.0_1\nother-1.0_1\n" -- \
+		xbps-query -r root -C empty.conf --repository=repo1 --repository=repo2 -RX foo
+	atf_check -o inline:"other-1.0_1\n" -- \
+		xbps-query -r root -C empty.conf --repository=repo1 --repository=repo2 -RX virtual
+}
+
+atf_test_case repo_revdeps_override_no_target
+
+repo_revdeps_override_no_target_head() {
+	atf_set "descr" "xbps-query(1) -RX honors overrides in repositories without the queried package"
+}
+
+repo_revdeps_override_no_target_body() {
+	mkdir -p root repo1 repo2 pkg
+
+	cd repo1
+	atf_check -o ignore -- xbps-create -A noarch -n bar-1.0_1 -s "bar pkg" ../pkg
+	atf_check -o ignore -- xbps-rindex -a $PWD/*.xbps
+	cd ../repo2
+	atf_check -o ignore -- xbps-create -A noarch -n foo-1.0_1 -s "foo pkg" ../pkg
+	atf_check -o ignore -- xbps-create -A noarch -n bar-1.0_1 \
+		-s "bar pkg" -D "foo>=0" ../pkg
+	atf_check -o ignore -- xbps-rindex -a $PWD/*.xbps
+	cd ..
+
+	atf_check -o empty -- \
+		xbps-query -r root -C empty.conf --repository=repo1 --repository=repo2 -RX foo
+}
+
 atf_init_test_cases() {
 	atf_add_test_case cat_file
 	atf_add_test_case repo_cat_file
 	atf_add_test_case search
 	atf_add_test_case search_prop
 	atf_add_test_case show_prop
+	atf_add_test_case repo_revdeps
+	atf_add_test_case repo_revdeps_override
+	atf_add_test_case repo_revdeps_override_no_target
 }
