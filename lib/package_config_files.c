@@ -50,7 +50,8 @@ xbps_entry_is_a_conf_file(xbps_dictionary_t filesd,
 
 	for (unsigned int i = 0; i < xbps_array_count(array); i++) {
 		d = xbps_array_get(array, i);
-		xbps_dictionary_get_cstring_nocopy(d, "file", &cffile);
+		if (!xbps_dictionary_get_cstring_nocopy(d, "file", &cffile))
+			continue;
 		if (strcmp(cffile, entry_pname) == 0)
 			return true;
 	}
@@ -115,8 +116,9 @@ xbps_entry_install_conf_file(struct xbps_handle *xhp,
 	iter2 = xbps_array_iter_from_dict(pkg_filesd, "conf_files");
 	if (iter2 != NULL) {
 		while ((obj2 = xbps_object_iterator_next(iter2))) {
-			xbps_dictionary_get_cstring_nocopy(obj2,
-			    "file", &cffile);
+			if (!xbps_dictionary_get_cstring_nocopy(obj2,
+			    "file", &cffile))
+				continue;
 			snprintf(buf, sizeof(buf), ".%s", cffile);
 			if (strcmp(entry_pname, buf) == 0) {
 				xbps_dictionary_get_cstring_nocopy(obj2, "sha256", &sha256_orig);
@@ -139,7 +141,8 @@ xbps_entry_install_conf_file(struct xbps_handle *xhp,
 	 * Compare original, installed and new hash for current file.
 	 */
 	while ((obj = xbps_object_iterator_next(iter))) {
-		xbps_dictionary_get_cstring_nocopy(obj, "file", &cffile);
+		if (!xbps_dictionary_get_cstring_nocopy(obj, "file", &cffile))
+			continue;
 		snprintf(buf, sizeof(buf), ".%s", cffile);
 		if (strcmp(entry_pname, buf)) {
 			continue;
@@ -158,7 +161,8 @@ xbps_entry_install_conf_file(struct xbps_handle *xhp,
 				break;
 			}
 		}
-		xbps_dictionary_get_cstring_nocopy(obj, "sha256", &sha256_new);
+		if (!xbps_dictionary_get_cstring_nocopy(obj, "sha256", &sha256_new))
+			continue;
 		/*
 		 * Orig = X, Curr = X, New = X
 		 *
