@@ -585,7 +585,10 @@ collect_files(struct xbps_handle *xhp, xbps_dictionary_t d,
 	if ((a = xbps_dictionary_get(d, "files"))) {
 		for (i = 0; i < xbps_array_count(a); i++) {
 			filed = xbps_array_get(a, i);
-			xbps_dictionary_get_cstring_nocopy(filed, "file", &file);
+			if (!xbps_dictionary_get_cstring_nocopy(filed, "file", &file)) {
+				rv = EINVAL;
+				goto out;
+			}
 			if (removefile)
 				xbps_dictionary_get_cstring_nocopy(filed, "sha256", &sha256);
 			size = 0;
@@ -603,7 +606,10 @@ collect_files(struct xbps_handle *xhp, xbps_dictionary_t d,
 	if ((a = xbps_dictionary_get(d, "conf_files"))) {
 		for (i = 0; i < xbps_array_count(a); i++) {
 			filed = xbps_array_get(a, i);
-			xbps_dictionary_get_cstring_nocopy(filed, "file", &file);
+			if (!xbps_dictionary_get_cstring_nocopy(filed, "file", &file)) {
+				rv = EINVAL;
+				goto out;
+			}
 			size = 0;
 			xbps_dictionary_get_uint64(filed, "size", &size);
 			if (removefile)
@@ -627,9 +633,11 @@ collect_files(struct xbps_handle *xhp, xbps_dictionary_t d,
 		for (i = 0; i < xbps_array_count(a); i++) {
 			const char *target = NULL;
 			filed = xbps_array_get(a, i);
-			xbps_dictionary_get_cstring_nocopy(filed, "file", &file);
-			xbps_dictionary_get_cstring_nocopy(filed, "target", &target);
-			assert(target);
+			if (!xbps_dictionary_get_cstring_nocopy(filed, "file", &file) ||
+			    !xbps_dictionary_get_cstring_nocopy(filed, "target", &target)) {
+				rv = EINVAL;
+				goto out;
+			}
 			rv = collect_file(xhp, file, 0, pkgname, pkgver, idx, NULL,
 			    TYPE_LINK, update, removepkg, preserve, removefile, target);
 			if (rv == EEXIST) {
@@ -643,7 +651,10 @@ collect_files(struct xbps_handle *xhp, xbps_dictionary_t d,
 	if ((a = xbps_dictionary_get(d, "dirs"))) {
 		for (i = 0; i < xbps_array_count(a); i++) {
 			filed = xbps_array_get(a, i);
-			xbps_dictionary_get_cstring_nocopy(filed, "file", &file);
+			if (!xbps_dictionary_get_cstring_nocopy(filed, "file", &file)) {
+				rv = EINVAL;
+				goto out;
+			}
 			rv = collect_file(xhp, file, 0, pkgname, pkgver, idx, NULL,
 			    TYPE_DIR, update, removepkg, preserve, removefile, NULL);
 			if (rv == EEXIST) {

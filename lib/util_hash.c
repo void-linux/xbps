@@ -231,8 +231,9 @@ file_hash_dictionary(xbps_dictionary_t d, const char *key, const char *file)
 		return NULL;
 	}
 	while ((obj = xbps_object_iterator_next(iter)) != NULL) {
-		xbps_dictionary_get_cstring_nocopy(obj,
-		    "file", &curfile);
+		if (!xbps_dictionary_get_cstring_nocopy(obj,
+		    "file", &curfile))
+			continue;
 		if (strcmp(file, curfile) == 0) {
 			/* file matched */
 			xbps_dictionary_get_cstring_nocopy(obj,

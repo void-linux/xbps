@@ -23,6 +23,29 @@ install_empty_body() {
 	atf_check_equal $rv 0
 }
 
+atf_test_case install_malformed_files_plist
+
+install_malformed_files_plist_head() {
+	atf_set "descr" "Tests for pkg installations: files.plist entry without a file key"
+}
+
+install_malformed_files_plist_body() {
+	mkdir -p repo pkg_A/usr/bin
+	echo A > pkg_A/usr/bin/foo
+	cd repo
+	xbps-create --compression none -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	# rename the file keys in files.plist; the replacement has the same
+	# length, so the uncompressed archive stays valid.
+	sed -e 's,<key>file</key>,<key>nope</key>,' -i A-1.0_1.noarch.xbps
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+	xbps-install -C empty.conf -r root --repository=$PWD/repo -yd A
+	atf_check_equal $? 22
+}
+
 atf_test_case install_with_deps
 
 install_with_deps_head() {
@@ -774,6 +797,7 @@ update_issue_218_body() {
 
 atf_init_test_cases() {
 	atf_add_test_case install_empty
+	atf_add_test_case install_malformed_files_plist
 	atf_add_test_case install_with_deps
 	atf_add_test_case install_with_vpkg_deps
 	atf_add_test_case install_if_not_installed_on_update
